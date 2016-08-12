@@ -1,5 +1,4 @@
 alembic==0.8.4
-zeroc_ice==3.6.2.1
 protobuf==2.6.1
 SQLAlchemy==1.0.11
 Flask==0.10.1
