@@ -4,7 +4,10 @@ Contains data structures for more advanced mapping functionality.
 @{
 """
 from collections import defaultdict
-from ordereddict import OrderedDict
+try:
+    from ordereddict import OrderedDict
+except ImportError:
+    from collections import OrderedDict
 from UserDict import DictMixin
 
 class MultimapValueMeta(type):
