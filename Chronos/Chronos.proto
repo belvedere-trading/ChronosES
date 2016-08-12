@@ -1,0 +1,116 @@
+package BT.Chronos.Proto;
+
+message EventProto {
+  optional string type = 1;
+  optional int64 version = 2;
+  optional int64 logicVersion = 3;
+  optional bytes proto = 4;
+  optional int64 receivedTimestamp = 5;
+  optional int64 processedTimestamp = 6;
+}
+
+message AggregateProto {
+  optional int64 aggregateId = 1;
+  optional int64 version = 2;
+  optional bytes proto = 3;
+}
+
+message ChronosRequest {
+  optional int64 aggregateId = 1;
+  optional string eventType = 2;
+  optional bytes eventProto = 3;
+  optional bytes senderId = 4;
+}
+
+message ChronosRequestWithTag {
+  optional ChronosRequest request = 1;
+  optional string tag = 2;
+  optional int32 tagExpiration = 3;
+}
+
+message ChronosTransactionRequest {
+  repeated ChronosRequestWithTag requests = 1;
+}
+
+message ChronosPair {
+   optional string key = 1;
+   optional string value = 2;
+}
+
+message ChronosResponse {
+  enum ResponseCode {
+    SUCCESS = 0;
+    FAILURE = 1;
+  }
+
+  optional int64 requestId = 1;
+  optional ResponseCode responseCode = 2;
+  optional string responseMessage = 3;
+  optional EventProto eventProto = 4;
+  optional AggregateProto aggregateProto = 5;
+  optional bytes senderId = 6;
+  repeated ChronosPair additionalInformation = 7;
+}
+
+message AggregateLogic {
+  optional string protoFileContents = 1;
+  optional string pythonFileContents = 2;
+}
+
+message ChronosRegistrationRequest {
+  optional string aggregateName = 1;
+  optional AggregateLogic aggregateLogic = 2;
+}
+
+message ChronosRegistrationResponse {
+  enum ResponseCode {
+    SUCCESS = 0;
+    FAILURE = 1;
+  }
+
+  optional ResponseCode responseCode = 1;
+  optional string responseMessage = 2;
+  repeated string indexedAttributes = 3;
+}
+
+message ChronosManagementNotification {
+  enum NotificationType {
+    REGISTERED = 0;
+    UNREGISTERED = 1;
+    INDEX_DIVERGED = 2;
+  }
+
+  optional NotificationType notificationType = 1;
+  optional int64 aggregateId = 2; // Only set for INDEX_DIVERGED
+  repeated string indexedAttributes = 3; // Only set for REGISTERED
+}
+
+message ChronosQueryAllRequest {
+  optional string aggregateName = 1;
+}
+
+message ChronosQueryByIdRequest {
+  optional string aggregateName = 1;
+  optional int64 aggregateId = 2;
+}
+
+message ChronosQueryByIndexRequest {
+  optional string aggregateName = 1;
+  repeated string indexKeys = 2;
+}
+
+message ChronosQueryByTagRequest {
+  optional string aggregateName = 1;
+  optional string tag = 2;
+  optional int64 aggregateId = 3;
+}
+
+message ChronosQueryResponse {
+  enum ResponseCode {
+    SUCCESS = 0;
+    TAG_NOT_FOUND = 1;
+  }
+
+  repeated AggregateProto aggregates = 1;
+  optional ResponseCode responseCode = 2;
+}
