@@ -167,7 +167,7 @@ class AbstractServiceImplementations(object):
     @abstractmethod
     def __init__(self, infrastructureProvider):
         """
-        The main purpose of this class is to decouple ChronosES from a specific transport implementation.
+        The main purpose of this class (along with AbstractClientProxy) is to decouple ChronosES from a specific transport implementation.
         Belvedere, for example, uses a CORBA-based RPC transport that most users would not be interested in adopting.
         Implementations of this class are really nothing more than thin wrappers that should connect to some network
         resource and forward requests to Chronos::Gateway::ChronosGateway.
@@ -248,18 +248,26 @@ class AbstractServiceImplementations(object):
 class AbstractClientProxy(object):
     __metaclass__ = ABCMeta
     def __init__(self, infrastructureProvider):
-        pass
+        """The main purpose of this class (along with AbstractServiceImplementations) is to decouple ChronosES from a specific transport implementation.
+        Please see the documentation of AbstractServiceImplementations for full details about this abstraction.
+        All required client method implementations are documented below.
 
-    @abstractmethod
-    def Startup(self, serviceEndpoint):
-        pass
-
-    @abstractmethod
-    def Shutdown(self):
+        Any of the methods of this class should be expected to throw arbitrary Exceptions depending on the transport layer implementation being
+        used by the client/service pair. Because the transport layer is configurable, there isn't a good way to restrict these Exceptions.
+        When implementing an AbstractClientProxy, please make sure to be aware of this caveat and design an appropriate Exception hierarchy for
+        your use case.
+        """
         pass
 
     @abstractmethod
     def RegisterAggregate(self, chronosRequest):
+        """Registers an Aggregate's data model and logic with the ChronosES service.
+        Under normal circumstances (ie. no network issues and service is running), this method should never throw an Exception. Instead,
+        the returned ChronosRegistrationResponse will contain success/failure information along with any necessary details.
+
+        @param chronosRequest A Chronos::Chronos_pb2::ChronosRegistrationRequest instance specifying the Aggregate to be registered.
+        @returns A Chronos::Chronos_pb2::ChronosRegistrationResponse object detailing the result of the registration request.
+        """
         pass
 
     @abstractmethod
