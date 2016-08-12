@@ -1,0 +1,15 @@
+package Chronos.LoadTest;
+
+message LoadTest {
+  optional int64 createdTime = 1;
+  optional int64 prevTime = 2;
+  optional int64 currTime = 3;
+}
+
+message CreateEvent {
+  optional int64 startTime = 1;
+}
+
+message TestEvent {
+  optional int64 sentTime = 1;
+}

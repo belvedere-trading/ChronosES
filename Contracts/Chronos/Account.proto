@@ -1,0 +1,19 @@
+package Chronos.Account;
+
+message Account {
+    optional string owner = 1;
+    optional int32 balance = 2;
+}
+
+message CreateEvent {
+    optional string owner = 1;
+    optional int32 initialAmount = 2;
+}
+
+message DepositEvent {
+    optional int32 amount = 1;
+}
+
+message WithdrawEvent {
+    optional int32 amount = 1;
+}
