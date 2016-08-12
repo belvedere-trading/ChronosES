@@ -40,8 +40,8 @@ class CustomSdist(sdist):
 
 setup(name='Chronos',
       version='0.1.0',
-      author='Belvedere',
-      author_email='Team_Brown_Tech@belvederetrading.com',
+      author='Belvedere Trading',
+      author_email='ChronosES@belvederetrading.com',
       cmdclass={'sdist': CustomSdist},
       packages=find_packages(),
       package_data={'Chronos': ['ChronosScripts/*', 'initd/*', 'bin/*', 'files/*', 'buildList.txt']},
