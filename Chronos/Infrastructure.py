@@ -1,4 +1,18 @@
-"""@addtogroup Chronos
+"""@file Basic infrastructural components for Chronos.
+
+In addition to contracts that are used across multiple different Chronos modules (the persistence items),
+this file also specifies the various "customization points" offered by Chronos. These customization points are
+modules that are dynamically loaded at runtime depending on the current system configuration.
+
+For more information, see the abstract definitions for the customization points below:
+
+AbstractEventStore
+AbstractServiceProxyManager
+AbstractClientProxy
+AbstractServiceImplementations
+
+For more information about the definition of the configuration file, see config.ini at the root of the repository.
+@addtogroup Chronos
 @{
 """
 import imp
@@ -153,66 +167,81 @@ class AbstractServiceImplementations(object):
     @abstractmethod
     def __init__(self, infrastructureProvider):
         """
-            This is a dummy class that will be loaded to for different types of transports.  You need to be able
-            to handle the following types of Messages.  Please see RestServiceImplementation.py for an example.
+        The main purpose of this class is to decouple ChronosES from a specific transport implementation.
+        Belvedere, for example, uses a CORBA-based RPC transport that most users would not be interested in adopting.
+        Implementations of this class are really nothing more than thin wrappers that should connect to some network
+        resource and forward requests to Chronos::Gateway::ChronosGateway.
 
-            @abstractmethod
-            def RegisterAggregate(self, request):
-                pass
+        All methods that you'll need to implement for a different transport are listed below. The easiest way to get
+        started with writing your own transport layer plugin would be to take a look at RestServiceImplementation.py,
+        understand that code, and then move forward from there.
 
-            @abstractmethod
-            def UnregisterAggregate(self, aggregateName):
-                pass
+        @abstractmethod
+        def RegisterAggregate(self, request):
+            pass
 
-            @abstractmethod
-            def CheckStatus(self, aggregateName):
-                pass
+        @abstractmethod
+        def UnregisterAggregate(self, aggregateName):
+            pass
 
-            @abstractmethod
-            def ProcessEvent(self, request):
-                pass
+        @abstractmethod
+        def CheckStatus(self, aggregateName):
+            pass
 
-            @abstractmethod
-            def ProcessEventWithTag(self, request):
-                pass
+        @abstractmethod
+        def ProcessEvent(self, request):
+            pass
 
-            @abstractmethod
-            def ProcessTransaction(self, request):
-                pass
+        @abstractmethod
+        def ProcessEventWithTag(self, request):
+            pass
 
-            @abstractmethod
-            def GetAll(self, request):
-                pass
+        @abstractmethod
+        def ProcessTransaction(self, request):
+            pass
 
-            @abstractmethod
-            def GetById(self, request):
-                pass
+        @abstractmethod
+        def GetAll(self, request):
+            pass
 
-            @abstractmethod
-            def GetByIndex(self, request):
-                pass
+        @abstractmethod
+        def GetById(self, request):
+            pass
 
-            @abstractmethod
-            def GetByTag(self, request):
-                pass
+        @abstractmethod
+        def GetByIndex(self, request):
+            pass
 
-            @abstractmethod
-            def GetTags(self, aggregateName):
-                pass
+        @abstractmethod
+        def GetByTag(self, request):
+            pass
+
+        @abstractmethod
+        def GetTags(self, aggregateName):
+            pass
 
         """
         pass
 
     @abstractmethod
     def ProvisionOnStart(self):
+        """Perform any necessary infrastructural setup.
+        This method will be called exactly once, after the service is started, but before BlockingRunService.
+        """
         pass
 
     @abstractmethod
     def BlockingRunService(self, commandLineArgs):
+        """Perform any necessary actions to finalize running of your transport.
+        This method should block until some signal (ie. SIGKILL) is received.
+        """
         pass
 
     @abstractmethod
     def CleanupOnExit(self):
+        """Perform any necessary actions to clean up your transport prior to the process exiting.
+        This method will be called exactly once, after BlockingRunService yields control.
+        """
         pass
 
 
@@ -493,6 +522,6 @@ class InfrastructureProvider(object):
         if self.OverridesExist() and self.config.has_section(pluginType):
             for key in pluginStructure.iterkeys():
                 config[key] = self.config.get(pluginType, key)
-            EventLogger.LogInformationAuto(self, 'Using overridden configurable implementation', 'Found override section',
-                                           tags=config)
+                EventLogger.LogInformationAuto(self, 'Using overridden configurable implementation', 'Found override section',
+                                               tags=config)
         return pluginProcessor(self, **config)
