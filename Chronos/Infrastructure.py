@@ -442,6 +442,14 @@ class AbstractEventKeys(object):
         pass
 
 class AbstractEventStore(object):
+    """An abstract base class detailing the interface required for a ChronosES persistence backend.
+    An event store implementation has two primary reponsibilities:
+    1. Persistence of Aggregate snapshot/Event data
+    2. Notification of processed Events/changes to Aggregate instance state.
+
+    The ChronosES implementation places some constraints on certain methods of this class; these will be documented
+    inline for each relevant method.
+    """
     __metaclass__ = ABCMeta
     def __init__(self, infrastructureProvider):
         """All AbstractEventStore subclass must implement an __init__ that at least satisfies this signature.
@@ -458,82 +466,199 @@ class AbstractEventStore(object):
 
     @abstractmethod
     def Dispose(self):
+        """Performs all necessary cleanup of remote resources.
+        """
         pass
 
     @abstractmethod
     def GetAggregateId(self, aggregateClass):
+        """Returns the current (unused) aggregateId for an Aggregate.
+        This value would be the equivalent of the next primary key that would be assigned by a SQL insert.
+        This operation should not modify the underlying data store in any way.
+
+        @param aggregateClass A Chronos::Core::Aggregate subclass specifying which Aggregate to query.
+        @returns A long.
+        """
         pass
 
     @abstractmethod
     def GetAndIncrementAggregateId(self, aggregateClass):
+        """Increments and returns the current aggregateId for an Aggregate.
+        This value would be the equivalent of the next primary key that would be assigned by a SQL insert.
+        This operation should permanently modify the stored aggregateId in the underlying data store.
+
+        @param aggregateClass A Chronos::Core::Aggregate subclass specifying which Aggregate to query.
+        @returns A long.
+        """
         pass
 
     @abstractmethod
     def PersistAggregateLogic(self, aggregateClass, aggregateLogic):
+        """Persists new Aggregate logic into the underlying data store and returns the new logicId.
+        The logicId is a value representing the "primary key" for the logic in the underlying data store.
+        This value is used during Event replay to determine which "version" of logic a given Event was run with.
+
+        @param aggregateLogic A Chronos::Chronos_pb2::AggregateLogic instance to be persisted.
+        @returns A long.
+        """
         pass
 
     @abstractmethod
     def GetLatestAggregateLogic(self, aggregateClass):
+        """Return the most recently registered version of an Aggregate's logic/data model.
+
+        @param aggregateClass A Chronos::Core::Aggregate subclass specifying which Aggregate to query.
+        @returns A dictionary of logicId to the Chronos::Chronos_pb2::AggregateLogic instance representing the logic, or None if no logic could be found.
+        """
         pass
 
     @abstractmethod
     def GetLatestAggregateLogicByName(self, aggregateName):
+        """Return the most recently registered version of an Aggregate's logic/data model.
+
+        @param aggregateName The name of the Aggregate for which logic should be retrieved.
+        @returns A Chronos::Chronos_pb2::AggregateLogic instance representing the logic
+        """
         pass
 
     @abstractmethod
     def GetAggregateLogic(self, aggregateClass, logicIds):
+        """Returns multiple versions of logic for an Aggregate.
+
+        @param aggregateClass A Chronos::Core::Aggregate subclass specifying which Aggregate to query.
+        @param logicIds A list of longs specifying which logic versions should be retrieved.
+        @returns A dictionary of logicId to the Chronos::Chronos_pb2::AggregateLogic instance representing the logic.
+        """
         pass
 
     @abstractmethod
     def PersistEvents(self, aggregateClass, events):
+        """Atomically persist Events to the underlying data store and notify subscribed clients of the modifications.
+        Until this method is called, an Event has not truly been applied. Your implementation must ensure that data persistence
+        and notification is atomic; otherwise, it's possible for Events to be applied without notifying clients, breaking one
+        of the ChronosES guarantees.
+
+        The input to this method is a list of BufferItem subclass instances (PersistenceBufferItem, PersistenceBufferFailureItem, etc).
+        The method implementation must handle ALL possible BufferItem types and persist/notify clients of them accordingly.
+
+        @see Chronos::DefaultImplementations for a reference implementation using Redis.
+
+        @param aggregateClass A Chronos::Core::Aggregate subclass specifying which Aggregate to query.
+        @param events A list of BufferItem subclasses to be persisted.
+        """
         pass
 
     @abstractmethod
     def PublishManagementNotification(self, aggregateClass, notification):
+        """Publish a notification the subscribed clients that a management event has occured.
+
+        @param aggregateClass A Chronos::Core::Aggregate subclass specifying which Aggregate to query.
+        @param notification A Chronos::Chronos_pb2::ChronosManagementNotification instance.
+        """
         pass
 
     @abstractmethod
     def GetEventPersistenceCheckpoint(self, aggregateClass):
+        """Returns the current EventPersistenceCheckpoint for an Aggregate.
+
+        @param aggregateClass A Chronos::Core::Aggregate subclass specifying which Aggregate to query.
+        @returns An EventPersistenceCheckpoint instance.
+        """
         pass
 
     @abstractmethod
     def GetEventsToVersion(self, aggregate, toVersion):
+        """Returns Events for an Aggregate instance from a lower version to a higher one.
+
+        @param aggregate A Chronos::Core::Aggregate subclass instance. The aggregateId and version from this instance are used.
+        @param toVersion A long specifying the version to which Events should be retrieved.
+        @returns A list of Chronos::Core::Event subclass instances.
+        """
         pass
 
     @abstractmethod
     def GetEventsByTimestampRange(self, aggregate, fromTimestamp, toTimestamp):
+        """Returns Events for an Aggregate instance from one point in time to another.
+
+        @param aggregate A Chronos::Core::Aggregate subclass instance. The aggregateId from this instance is used.
+        @param fromTimestamp A long specifying the start time in nanosecond-precision Epoch time.
+        @param toTimestamp A long specifying the end time in nanosecond-precision Epoch time.
+        @returns A list of Chronos::Core::Event subclass instances.
+        """
         pass
 
     @abstractmethod
     def TryGetSnapshot(self, aggregateClass, aggregateId):
+        """Returns the latest snapshot of an Aggregate instance's state.
+
+        @param aggregateClass A Chronos::Core::Aggregate subclass specifying which Aggregate to query.
+        @param aggregateId A long specifying the Aggregate instance to query.
+        @returns A Chronos::Core::Aggregate subclass instance with the latest snapshot state, or None if none could be found.
+        """
         pass
 
     @abstractmethod
     def GetAllSnapshots(self, aggregateClass):
+        """Returns the latest snapshot of all Aggregate instance states.
+
+        @param aggregateClass A Chronos::Core::Aggregate subclass specifying which Aggregate to query.
+        @returns A list of Chronos::Core::Aggregate subclass instances.
+        """
         pass
 
     @abstractmethod
     def GetIndexedSnapshots(self, aggregateClass, aggregateIds):
+        """Returns the latest snapshot of a subset of Aggregate instance states.
+
+        @param aggregateClass A Chronos::Core::Aggregate subclass specifying which Aggregate to query.
+        @param aggregateIds A list of longs specifying the aggregateIds to query.
+        @returns A list of Chronos::Core::Aggregate subclass instances.
+        """
         pass
 
     @abstractmethod
     def GetTags(self, aggregateClass):
+        # TODO(jkaye): This has to be fixed; requires an aggregateId now since we changed the tag concept.
         pass
 
     @abstractmethod
     def GetTag(self, aggregateClass, aggregateId, tag):
+        """Returns an Aggregate instance snapshot at a tagged point in time.
+
+        @param aggregateClass A Chronos::Core::Aggregate subclass specifying which Aggregate to query.
+        @param aggregateId A long specifying which Aggregate instance to query.
+        @param tag A string specifying the tag to retrieve.
+        @returns A Chronos::Core::Aggregate subclass instance, or None if the tag could not be found.
+        """
         pass
 
     @abstractmethod
     def GetAllAggregateNames(self):
+        """Returns the names of all Aggregates that have ever registered with ChronosES.
+
+        @returns A list of strings specifying the Aggregate names.
+        """
         pass
 
     @abstractmethod
     def Subscribe(self, prefix, channel, callback):
+        # TODO(jkaye): Fix this method signature. Prefix shouldn't be leaking here.
+        """Subscribes to notifications for Event application updates.
+
+        @param prefix Unused
+        @param channel A string specifying the topic to which the event store should subscribe.
+        @param callback A function to be called whenever a notification is received.
+        """
         pass
 
     @abstractmethod
     def Unsubscribe(self, prefix, channel):
+        # TODO(jkaye): Fix this method signature. Prefix shouldn't be leaking here.
+        """Unsubscribes to notifications for Event application updates.
+
+        @param prefix Unused
+        @param channel A string specifying the topic to which the event store should unsubscribe.
+        """
         pass
 
 class AbstractServiceProxyManager(object):
