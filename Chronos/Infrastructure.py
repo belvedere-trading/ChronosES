@@ -256,6 +256,9 @@ class AbstractClientProxy(object):
         used by the client/service pair. Because the transport layer is configurable, there isn't a good way to restrict these Exceptions.
         When implementing an AbstractClientProxy, please make sure to be aware of this caveat and design an appropriate Exception hierarchy for
         your use case.
+
+        All of the below methods should return the raw (serialized) Protobuf format of the specified types; the Chronos::Client::ChronosClient
+        handles all necessary parsing.
         """
         pass
 
@@ -272,42 +275,100 @@ class AbstractClientProxy(object):
 
     @abstractmethod
     def UnregisterAggregate(self, aggregateName):
+        """Unregisters an Aggregate with the ChronosES service.
+        After unregistration, Events will no longer be able to be raised against the Aggregate until a later call
+        is made to RegisterAggregate.
+
+        @param aggregateName A string specifying the name of the Aggregate to unregister.
+        @returns None
+        """
         pass
 
     @abstractmethod
     def CheckStatus(self, aggregateName):
+        """Returns the current registration status of an Aggregate.
+
+        @param aggregateName A string specifying the name of the Aggregate to check.
+        @returns ChronosRegistrationResponse
+        """
         pass
 
     @abstractmethod
     def ProcessEvent(self, chronosRequest):
+        """Enqueues an Event for future processing on an Aggregate instance.
+        If the aggregateId field of @p chronosRequest is set to 0, a new Aggregate instance will be created and the Event
+        will be applied against the new instance. Otherwise, the Event will be applied to the instance specified by
+        that aggregateId.
+
+        @param chronosRequest A Chronos::Chronos_pb2::ChronosRequest instance specifying the Event to be processed.
+        @returns A long representing the requestId for the Event.
+        """
         pass
 
     @abstractmethod
     def ProcessEventWithTag(self, chronosRequest):
+        """Identical to AbstractClientProxy::ProcessEvent, except that the resulting Aggregate instance's state will be tagged with the provided tag.
+
+        @param chronosRequest A Chronos::Chronos_pb2::ChronosRequestWithTag instance specifying the Event to be processed and the tag to be used.
+        @returns A long representing the requestId for the Event.
+        """
         pass
 
     @abstractmethod
     def ProcessTransaction(self, chronosRequest):
+        """Atomically enqueues multiple Events for future processing on Aggregate instances.
+        All supplied Events will be processed as an atomic transaction; if any Event in the transaction fails, then none of the Events
+        will be applied.
+
+        @param chronosRequest A Chronos::Chronos_pb2::ChronosTransactionRequest instance specifying the Events to be processed.
+        @returns A long representing the requestId for the transaction.
+        """
         pass
 
     @abstractmethod
     def GetAll(self, chronosRequest):
+        """Returns all Aggregate instance snapshots.
+
+        @param chronosRequest A Chronos::Chronos_pb2::ChronosQueryAllRequest instance.
+        @returns A Chronos::Chronos_pb2::ChronosQueryResponse instance.
+        """
         pass
 
     @abstractmethod
     def GetById(self, chronosRequest):
+        """Returns the Aggregate instance snapshot for the specified aggregateId.
+
+        @param chronosRequest A Chronos::Chronos_pb2::ChronosQueryByIdRequest instance.
+        @returns A Chronos::Chronos_pb2::ChronosQueryResponse instance.
+        """
         pass
 
     @abstractmethod
     def GetByIndex(self, chronosRequest):
+        """Returns the Aggregate instance snapshots that satisfy the specified indicies.
+
+        @param chronosRequest A Chronos::Chronos_pb2::ChronosQueryByIndexRequest instance.
+        The indexKeys property of @p chronosRequest should be a list of alternating key value pairs.
+        @returns A Chronos::Chronos_pb2::ChronosQueryResponse instance.
+        """
         pass
 
     @abstractmethod
     def GetByTag(self, chronosRequest):
+        """Returns the Aggregate instance snapshot for the specified tag.
+
+        @param chronosRequest A Chronos::Chronos_pb2::ChronosQueryByTagRequest instance.
+        @returns A Chronos::Chronos_pb2::ChronosQueryResponse instance.
+        """
         pass
 
     @abstractmethod
     def GetTags(self, aggregateName):
+        """Returns all tags for the specified Aggregate instance.
+
+        @param aggregateName A string specifying which Aggregate to query.
+        @returns A Chronos::Chronos_pb2::ChronosTagList instance.
+        """
         pass
 
 class AbstractServiceProxyManager(object):
