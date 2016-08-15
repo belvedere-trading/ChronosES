@@ -142,13 +142,13 @@ class ChronosGatewayRestService(AbstractServiceImplementations):
         self.host, self.port = GetConfiguredBinding(self.infrastructureProvider)
 
     def ProvisionOnStart(self):
+        global ISRUNNING  #pylint:disable=W0603
         if ISRUNNING:
             return
 
         global EVENTSTORE  #pylint:disable=W0603
         global SYNCHRONIZATIONMANAGER  #pylint:disable=W0603
         global GATEWAY  #pylint:disable=W0603
-        global ISRUNNING  #pylint:disable=W0603
 
         EVENTSTORE = self.infrastructureProvider.GetConfigurablePlugin(ConfigurablePlugin.EventStore)
         SYNCHRONIZATIONMANAGER = AggregateSynchronizationManager()
@@ -175,19 +175,18 @@ class ChronosGatewayRestService(AbstractServiceImplementations):
         cherrypy.engine.exit()
 
     def CleanupOnExit(self):
+        global ISRUNNING  #pylint:disable=W0603
         if not ISRUNNING:
             return
 
         global EVENTSTORE  #pylint:disable=W0603
         global GATEWAY  #pylint:disable=W0603
-        global ISRUNNING  #pylint:disable=W0603
 
         GATEWAY.Shutdown()
         GATEWAY = None
         EVENTSTORE.Dispose()
         EVENTSTORE = None
         ISRUNNING = False
-
 
 
 class ChronosGatewayRestClient(AbstractClientProxy):
