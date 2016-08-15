@@ -681,14 +681,18 @@ class AbstractServiceProxyManager(object):
     def Disconnect(self):
         pass
 
-class TransportType(object):
-    Client = 'client'
-    Service = 'service'
-
 class ConfigurablePlugin(object):
+    """An Enum class describing the different types of configurable ChronosES plugins.
+    """
     EventStore = 'EventStore'
     TransportLayer = 'TransportLayer'
     ServiceProxyManager = 'ServiceProxyManager'
+
+class TransportType(object):
+    """An Enum class describing the different types of transport components.
+    """
+    Client = 'client'
+    Service = 'service'
 
 def ProcessConfiguredModule(provider, filePath, className, abstractType, **kwargs):
     fileName = os.path.basename(filePath)
@@ -707,7 +711,7 @@ def ProcessConfiguredTransportLayer(provider, filePath, serviceClassName, client
     elif transportType == TransportType.Service:
         return ProcessConfiguredModule(provider, filePath, serviceClassName, AbstractServiceImplementations, **kwargs)
     else:
-        raise Exception('Please provide either service or client type')
+        raise ValueError('Failed to process unknown TransportType {0}'.format(transportType))
 
 def ProcessConfiguredServiceProxyManager(provider, filePath, className, **kwargs):
     return ProcessConfiguredModule(provider, filePath, className, AbstractServiceProxyManager, **kwargs)
@@ -757,7 +761,9 @@ class InfrastructureProvider(object):
                 raise EnvironmentError('Unable to read configuration from {0}'.format(self.ConfigFilePath))
 
     def OverridesExist(self):
-        """Returns a boolean representing whether or not a configuration file was found.
+        """Checks whether or not configured overrides were found.
+
+        @returns A boolean representing whether or not a configuration file was found.
         """
         return self.config is not None
 
@@ -773,6 +779,10 @@ class InfrastructureProvider(object):
         return data
 
     def GetConfigurablePlugin(self, pluginType, **kwargs):
+        """Constructs and returns a specific plugin implementation.
+
+        @param pluginType An instance of a configurable ChronosES plugin. Should be one of the ConfigurablePlugin Enum members.
+        """
         try:
             pluginStructure = self.ConfigurablePluginStructure[pluginType]
             pluginProcessor = self.ConfigurablePluginProcessors[pluginType]
