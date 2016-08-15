@@ -371,26 +371,75 @@ class AbstractClientProxy(object):
         """
         pass
 
-class AbstractServiceProxyManager(object):
+class AbstractEventKeys(object):
     __metaclass__ = ABCMeta
+    def __init__(self, aggregateClass):
+        """Initializes an AbstractEventKeys instance that can provide key information for an Aggregate.
 
-    def __init__(self, infrastructureProvider):
-        self.infrastructureProvider = infrastructureProvider
-
-    @abstractmethod
-    def Dispose(self):
-        pass
-
-    @abstractmethod
-    def Connect(self):
-        """Returns AbstractClientProxy for chronos.
+        @param aggregateClass The class of the Aggregate for which key information will be provided.
         """
         pass
 
     @abstractmethod
-    def Disconnect(self):
+    def GetEventKey(self, aggregateId):
+        """Returns the key that can be used to query Events for an Aggregate instance.
+
+        @param aggregateId A long specifying the Aggregate instance.
+        @returns A string representing the key to the Event data.
+        """
         pass
 
+    @abstractmethod
+    def GetSnapshotKey(self, aggregateId):
+        """Returns the key that can be used to query the snapshot for an Aggregate instance.
+
+        @param aggregateId A long specifying the Aggregate instance.
+        @returns A string representing the key to the snapshot data.
+        """
+        pass
+
+    @abstractmethod
+    def GetTagWildcard(self):
+        """Returns the key that can be used to query tags for an Aggregate instance.
+
+        @returns A string representing the wildcard key to the tag data.
+        """
+        pass
+
+    @abstractmethod
+    def GetTagKey(self, aggregateId, tag):
+        """Returns the key that can be used to query a tag for an Aggregate instance.
+
+        @param aggregateId A long specifying the Aggregate instance.
+        @param tag A string specifying the tag.
+        @returns A string representing the key to the tag snapshot data.
+        """
+        pass
+
+    @abstractmethod
+    def GetPublishingTopic(self, aggregate):
+        """Returns the key that can be used to publish/subscribe to updates for an Aggregate instance.
+
+        @param aggregate A Chronos::Core::Aggregate subclass instance.
+        @returns A string representing the key to the pub/sub channel.
+        """
+        pass
+
+    @abstractmethod
+    def GetFailureTopic(self):
+        """Returns the key that can be used to publish/subscribe to updates Aggregate Event processing failures.
+
+        @returns A string representing the key to the failure pub/sub channel.
+        """
+        pass
+
+    @abstractmethod
+    def GetManagementTopic(self):
+        """Returns the key that can be used to publish/subscribe to updates Aggregate management events.
+
+        @returns A string representing the key to the management pub/sub channel.
+        """
+        pass
 
 class AbstractEventStore(object):
     __metaclass__ = ABCMeta
@@ -403,6 +452,8 @@ class AbstractEventStore(object):
 
     @abstractproperty
     def KeyGenerator(self): #pylint: disable=C0103
+        """Returns the constructor for the AbstractEventKeys subclass associated with a particular AbstractEventStore implementation.
+        """
         pass
 
     @abstractmethod
@@ -483,6 +534,26 @@ class AbstractEventStore(object):
 
     @abstractmethod
     def Unsubscribe(self, prefix, channel):
+        pass
+
+class AbstractServiceProxyManager(object):
+    __metaclass__ = ABCMeta
+
+    def __init__(self, infrastructureProvider):
+        self.infrastructureProvider = infrastructureProvider
+
+    @abstractmethod
+    def Dispose(self):
+        pass
+
+    @abstractmethod
+    def Connect(self):
+        """Returns AbstractClientProxy for chronos.
+        """
+        pass
+
+    @abstractmethod
+    def Disconnect(self):
         pass
 
 class TransportType(object):

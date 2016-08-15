@@ -11,11 +11,10 @@ from Chronos.EventLogger import EventLogger
 from Chronos.Chronos_pb2 import AggregateLogic
 
 from Chronos.Core import Event
-from Chronos.Infrastructure import (AbstractEventStore, EventPersistenceCheckpoint, FailureSerializationResult, ManagementSerializationResult,
+from Chronos.Infrastructure import (AbstractEventStore, AbstractEventKeys, EventPersistenceCheckpoint, FailureSerializationResult, ManagementSerializationResult,
                                     TagSerializationResult, AbstractServiceProxyManager, TransportType, ConfigurablePlugin)
 
-class RedisEventKeys(object):
-    """Provides various Redis keys based on aggregate information."""
+class RedisEventKeys(AbstractEventKeys):
     def __init__(self, aggregateClass):
         self.aggregateClass = aggregateClass
         self.hashKey = '{{Chronos.{0}}}'.format(aggregateClass.__name__)
