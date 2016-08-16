@@ -356,8 +356,9 @@ class EventProcessorTest(unittest.TestCase):
 
         global ChronosCoreException, PersistenceBufferItem, PersistenceBufferManagementItem
         from Chronos.Core import (EventProcessor, ChronosCoreException, PersistenceBufferItem,
-                                  RedisEventStore, AggregateLogicCompiler, IndexStore, PersistenceBufferManagementItem)
-        self.mockEventStore = mock.MagicMock(spec=RedisEventStore)
+                                  AggregateLogicCompiler, IndexStore, PersistenceBufferManagementItem)
+        from Chronos.Infrastructure import AbstractEventStore
+        self.mockEventStore = mock.MagicMock(spec=AbstractEventStore)
         self.mockLogicCompiler = mock.MagicMock(spec=AggregateLogicCompiler)
         self.mockPool = mock.MagicMock()
         self.mockIndexStore = mock.MagicMock(spec=IndexStore)

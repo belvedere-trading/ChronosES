@@ -16,6 +16,7 @@ from Chronos.Infrastructure import (AbstractEventStore, AbstractEventKeys, Event
 
 class RedisEventKeys(AbstractEventKeys):
     def __init__(self, aggregateClass):
+        super(RedisEventKeys, self).__init__(aggregateClass)
         self.aggregateClass = aggregateClass
         self.hashKey = '{{Chronos.{0}}}'.format(aggregateClass.__name__)
         self.idKey = '{0}.Id'.format(self.hashKey)

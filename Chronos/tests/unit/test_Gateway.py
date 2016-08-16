@@ -21,9 +21,7 @@ class MockNonDivergedAggregate(MockAggregate):
 
 class GatewayTestBase(object):
     def GetMockCoreProviderGenerator(self):
-        self.mockSqliteSession = mock.MagicMock()
         self.mockIndexStore = mock.MagicMock()
-        self.mockIndexStore.GetSession.return_value = self.mockSqliteSession
         self.mockAggregateRepository = mock.MagicMock()
         self.mockBufferItem = mock.MagicMock()
         self.mockEventProcessor = mock.MagicMock()
@@ -114,7 +112,7 @@ class ChronosProcessTest(unittest.TestCase, GatewayTestBase):
     def test_EventLoopWhileNotRunningShouldRaiseChronosGatewayException(self):
         self.assertRaises(ChronosGatewayException, self.chronosProcess.EventLoop)
 
-    def test_EventLoopFailingToGetSqliteSessionShouldShutDownProcess(self):
+    def test_EventLoopFailingToGetIndexStoreShouldShutDownProcess(self):
         mockThread = self.StartProcess()
         self.mockIndexStore.GetSession.side_effect = KeyError('catastrophy')
         self.chronosProcess.EventLoop()
@@ -133,8 +131,6 @@ class ChronosProcessTest(unittest.TestCase, GatewayTestBase):
         self.chronosProcess.EventLoop()
 
         self.assertEqual(self.chronosProcess.ProcessEvent.call_args_list, [mock.call(queryItem), mock.call(queryItem), mock.call(queryItem)])
-        self.assertEqual(5, self.mockSqliteSession.commit.call_count)
-        self.mockSqliteSession.rollback.assert_called_once_with()
 
     def test_ProcessEventWithNoAggregateIdShouldCreateAndIndexNewAggregate(self):
         self.StartProcess()
@@ -146,14 +142,10 @@ class ChronosProcessTest(unittest.TestCase, GatewayTestBase):
         type(self.chronosProcess).isRunning = mock.PropertyMock(side_effect=itertools.chain([True], itertools.repeat(False)))
         self.chronosProcess.EventLoop()
 
-        self.assertEqual(2, self.mockSqliteSession.begin_nested.call_count)
-        self.mockIndexStore.ReindexAggregate.assert_called_once_with(mockAggregate, self.mockSqliteSession)
         self.mockEventProcessor.ProcessIndexDivergence.assert_called_once_with(self.mockAggregateClass, 0)
         self.assertEqual(0, self.mockIndexStore.IndexTag.call_count)
         self.assertEqual(0, self.mockTagManager.CreateTagWithoutPersistence.call_count)
         self.mockEventProcessor.EnqueueForPersistence.assert_called_once_with(self.mockBufferItem)
-        self.assertEqual(3, self.mockSqliteSession.commit.call_count)
-        self.mockSqliteSession.rollback.assert_called_once_with()
         self.assertEqual(0, self.mockAggregateRepository.Rollback.call_count)
         self.assertEqual(0, self.mockEventProcessor.Rollback.call_count)
 
@@ -168,9 +160,7 @@ class ChronosProcessTest(unittest.TestCase, GatewayTestBase):
         type(self.chronosProcess).isRunning = mock.PropertyMock(side_effect=itertools.chain([True], itertools.repeat(False)))
         self.chronosProcess.EventLoop()
 
-        self.assertEqual(1, self.mockSqliteSession.begin_nested.call_count)
         self.assertEqual(1, self.mockEventProcessor.ProcessFailure.call_count)
-        self.assertEqual(2, self.mockSqliteSession.rollback.call_count)
         self.mockAggregateRepository.Begin.assert_called_once_with()
         self.mockAggregateRepository.Rollback.assert_called_once_with()
         self.mockEventProcessor.Begin.assert_called_once_with()
@@ -483,7 +473,7 @@ class ChronosGatewayTest(unittest.TestCase):
 
     def test_GetTags(self):
         mockRegistryItem = mock.MagicMock()
-        mockRegistryItem.process.GetAllTags.return_value = 'all tags'
+        mockRegistryItem.process.GetAllTags.return_value.SerializeToString.return_value = 'all tags'
         self.chronosGateway.GetRegistryItem = mock.MagicMock(return_value=mockRegistryItem)
         result = self.chronosGateway.GetTags('testing')
 
