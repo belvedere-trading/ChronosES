@@ -823,11 +823,13 @@ class EventProcessor(object):
     """Handles processing and replay of events against aggregate instances.
     This class is thread-safe."""
     MaxBufferedEvents = 15
-    def __init__(self, eventStore, logicCompiler):
+    def __init__(self, eventStore, logicCompiler, persistencePool=None):
+        if persistencePool is None:
+            persistencePool = Pool(processes=4)
         self.eventStore = eventStore
         self.logicCompiler = logicCompiler
         self.persistenceBuffer = []
-        self.persistencePool = Pool(processes=4) # TODO(jkaye): Is this a good number?
+        self.persistencePool = persistencePool
         self.lock = threading.RLock()
         self.isReplaying = False
         self.transactionBuffer = None

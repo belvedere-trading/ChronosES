@@ -362,11 +362,9 @@ class EventProcessorTest(unittest.TestCase):
         self.mockLogicCompiler = mock.MagicMock(spec=AggregateLogicCompiler)
         self.mockPool = mock.MagicMock()
         self.mockIndexStore = mock.MagicMock(spec=IndexStore)
-        self.eventProcessor = EventProcessor(self.mockEventStore, self.mockLogicCompiler)
-        self.eventProcessor.persistencePool = self.mockPool
+        self.eventProcessor = EventProcessor(self.mockEventStore, self.mockLogicCompiler, persistencePool=self.mockPool)
 
     def tearDown(self):
-        self.eventProcessor.persistencePool.terminate()
         self.patcher.stop()
 
     @mock.patch('time.time')

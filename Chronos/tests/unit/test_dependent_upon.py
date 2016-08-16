@@ -10,8 +10,9 @@ class MockSemanticException(Exception):
 class DependentUponTest(TestCase):
     def setUp(self):
         self.patcher = mock.patch.dict('sys.modules',
-         'Chronos.EventLogger': mock.MagicMock(),
-         'Chronos.Core': mock.MagicMock(Event=MockEvent, ChronosSemanticException=MockSemanticException)
+        {
+            'Chronos.EventLogger': mock.MagicMock(),
+            'Chronos.Core': mock.MagicMock(Event=MockEvent, ChronosSemanticException=MockSemanticException)
         })
         self.patcher.start()
 
