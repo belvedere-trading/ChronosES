@@ -1,0 +1,23 @@
+#!/bin/sh
+
+DIR="$(dirname "$0")"
+
+# Assemble the base file directory from which we'll copy the Chronos files
+FILE_DIR="$DIR/../files"
+BASE_DIR="/var/lib/chronos"
+DB_DIR="$BASE_DIR/index.alembic/db"
+VERSIONS_DIR="$BASE_DIR/index.alembic/versions"
+
+# Ensure that the necessary directories exist
+if [ ! -d "$DB_DIR" ]; then
+    mkdir -p "$DB_DIR"
+fi
+if [ ! -d "$VERSIONS_DIR" ]; then
+    mkdir -p "$VERSIONS_DIR"
+fi
+
+# Move all files into their necessary locations
+cp -f "$FILE_DIR/run_migration" "$BASE_DIR"
+cp -f "$FILE_DIR/alembic.ini" "$BASE_DIR"
+cp -f "$FILE_DIR/env.py" "$BASE_DIR/index.alembic"
+cp -f "$FILE_DIR/script.py.mako" "$BASE_DIR/index.alembic"
