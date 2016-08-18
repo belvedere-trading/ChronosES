@@ -3,7 +3,7 @@
 DIR="$(dirname "$0")"
 
 # Assemble the base file directory from which we'll copy the Chronos files
-FILE_DIR="$DIR/../files"
+FILE_DIR="$DIR/../chronos"
 BASE_DIR="/var/lib/chronos"
 DB_DIR="$BASE_DIR/index.alembic/db"
 VERSIONS_DIR="$BASE_DIR/index.alembic/versions"
