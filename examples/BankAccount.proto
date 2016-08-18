@@ -1,0 +1,25 @@
+// The package name must be exactly Chronos.{AggregateName}
+package Chronos.BankAccount;
+
+// The Aggregate message's name must match the AggregateName above exactly
+message BankAccount {
+  optional string owner = 1;
+  optional int32 balance = 2;
+  optional bool isClosed = 3;
+}
+
+message CreateEvent {
+  optional string owner = 1;
+  optional int32 amount = 2;
+}
+
+message DepositEvent {
+  optional int32 amount = 1;
+}
+
+message WithdrawEvent {
+  optional int32 amount = 1;
+}
+
+message CloseEvent {
+}

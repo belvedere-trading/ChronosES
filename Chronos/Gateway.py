@@ -771,6 +771,7 @@ class ChronosGateway(object):
         proto.proto = aggregate.proto.SerializeToString()
 
 if __name__ == '__main__':
+    os.chdir('/var/lib/chronos')
     EventLogger.InitializeLogger(application='ChronosGateway')
 
     EventLogger.LogInformation('Chronos', 'Gateway', 'main', 'Chronos Hard Start')

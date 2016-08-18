@@ -288,13 +288,21 @@ class ChronosClient(object):
         EventLogger.LogInformationAuto(self, 'Registering aggregate',
                                        tags={'Aggregate': self.aggregateName})
         try:
-            moduleName = self.__module__.split('.', 1)[0]
-            pythonFileContents = pkg_resources.resource_string(moduleName,
-                os.path.join('ChronosScripts', self.aggregateName + '.py'))
-            protoFileContents = pkg_resources.resource_string(moduleName,
-                os.path.join('ChronosScripts', self.aggregateName + '.proto'))
             request = ChronosRegistrationRequest()
             request.aggregateName = self.aggregateName
+
+            chronosScriptLocation = os.getenv('CHRONOS_SCRIPT_LOCATION', None)
+            if chronosScriptLocation is not None:
+                with open(os.path.join(chronosScriptLocation, self.aggregateName + '.py'), 'r') as pythonFile:
+                    pythonFileContents = pythonFile.read()
+                with open(os.path.join(chronosScriptLocation, self.aggregateName + '.proto'), 'r') as protoFile:
+                    protoFileContents = protoFile.read()
+            else:
+                moduleName = self.__module__.split('.', 1)[0]
+                pythonFileContents = pkg_resources.resource_string(moduleName,
+                                                                   os.path.join('ChronosScripts', self.aggregateName + '.py'))
+                protoFileContents = pkg_resources.resource_string(moduleName,
+                                                                  os.path.join('ChronosScripts', self.aggregateName + '.proto'))
             request.aggregateLogic.pythonFileContents = pythonFileContents #pylint: disable=E1101
             request.aggregateLogic.protoFileContents = protoFileContents #pylint: disable=E1101
         except Exception:
