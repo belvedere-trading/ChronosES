@@ -21,3 +21,4 @@ cp -f "$FILE_DIR/run_migration" "$BASE_DIR"
 cp -f "$FILE_DIR/alembic.ini" "$BASE_DIR"
 cp -f "$FILE_DIR/env.py" "$BASE_DIR/index.alembic"
 cp -f "$FILE_DIR/script.py.mako" "$BASE_DIR/index.alembic"
+chmod -R 755 $BASE_DIR
