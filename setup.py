@@ -48,6 +48,6 @@ setup(name='Chronos',
       url='http://pypi:28080/simple/Chronos/',
       description='A distributed event sourcing framework',
       long_description=open('README.rst').read(),
-      scripts=['Chronos/bin/chronos_deploy']
+      scripts=['Chronos/bin/chronos_deploy'],
       install_requires=require_packages,
       tests_require=['mock'])
