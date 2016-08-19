@@ -1,0 +1,28 @@
+\hypertarget{Map_8py}{}\section{Chronos/\+Map.py File Reference}
+\label{Map_8py}\index{Chronos/\+Map.\+py@{Chronos/\+Map.\+py}}
+
+
+Contains data structures for more advanced mapping functionality.  
+
+
+\subsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classChronos_1_1Map_1_1MultimapValueMeta}{Chronos.\+Map.\+Multimap\+Value\+Meta}
+\begin{DoxyCompactList}\small\item\em A simple metaclass that tags indexing functions on \hyperlink{classChronos_1_1Map_1_1MultimapValue}{Multimap\+Value} instances for use by \hyperlink{classChronos_1_1Map_1_1ConjoiningIndexedMultimap}{Conjoining\+Indexed\+Multimap}. \end{DoxyCompactList}\item 
+class \hyperlink{classChronos_1_1Map_1_1MultimapValue}{Chronos.\+Map.\+Multimap\+Value}
+\begin{DoxyCompactList}\small\item\em A thin base class that uses the \hyperlink{classChronos_1_1Map_1_1MultimapValueMeta}{Multimap\+Value\+Meta} metaclass. \end{DoxyCompactList}\item 
+class \hyperlink{classChronos_1_1Map_1_1ConjoiningIndexedMultimap}{Chronos.\+Map.\+Conjoining\+Indexed\+Multimap}
+\begin{DoxyCompactList}\small\item\em A map that allows its values to be accessed by multiple (potentially shared) keys. \end{DoxyCompactList}\item 
+class \hyperlink{classChronos_1_1Map_1_1LRUEvictingMap}{Chronos.\+Map.\+L\+R\+U\+Evicting\+Map}
+\begin{DoxyCompactList}\small\item\em A dictionary that maintains a predefined maximum capacity. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+def \hyperlink{group__PyInfrastructure_ga9f969afc54b404a47d37bdf6d5060f10}{Chronos.\+Map.\+index} (func)
+\begin{DoxyCompactList}\small\item\em A method decorator that tags the associated method for indexing by \hyperlink{classChronos_1_1Map_1_1ConjoiningIndexedMultimap}{Conjoining\+Indexed\+Multimap}. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Contains data structures for more advanced mapping functionality. 
+

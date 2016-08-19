@@ -1,0 +1,25 @@
+var classChronos_1_1Infrastructure_1_1AbstractEventStore =
+[
+    [ "__init__", "group__Chronos.html#ga30a470bc6de0e6aaf468d9ba0abf53be", null ],
+    [ "Dispose", "group__Chronos.html#ga17c0011d29ca7707d5b790211327b586", null ],
+    [ "GetAggregateId", "group__Chronos.html#ga4a151ebe26b5a8046272920def464107", null ],
+    [ "GetAggregateLogic", "group__Chronos.html#gae000957aba7b70433c500fd97e0893e8", null ],
+    [ "GetAllAggregateNames", "group__Chronos.html#ga8c99114f487e0549eefe4b754d06ffa0", null ],
+    [ "GetAllSnapshots", "group__Chronos.html#ga8209810feeee912e6fe62f6244f38802", null ],
+    [ "GetAndIncrementAggregateId", "group__Chronos.html#ga00579d86cc3a3a7805b76a202046765b", null ],
+    [ "GetEventPersistenceCheckpoint", "group__Chronos.html#gaaf58520cf6503cad9967af939efca480", null ],
+    [ "GetEventsByTimestampRange", "group__Chronos.html#gae9298fb619df87b9181b881acde8f013", null ],
+    [ "GetEventsToVersion", "group__Chronos.html#ga33cde926e84482f515173ebec9852030", null ],
+    [ "GetIndexedSnapshots", "group__Chronos.html#gabd09dd35ed768b611c4135612a878285", null ],
+    [ "GetLatestAggregateLogic", "group__Chronos.html#gaac3c8acece5840e33d6ea383f60c1114", null ],
+    [ "GetLatestAggregateLogicByName", "group__Chronos.html#gab524764c52a48bd4b924d7518ba35f4c", null ],
+    [ "GetTag", "group__Chronos.html#ga6e7bef46c596b6148c2afd64032c9cc7", null ],
+    [ "GetTags", "group__Chronos.html#gaed8bdb12e22ed9384f9f9cd9b724b390", null ],
+    [ "KeyGenerator", "group__Chronos.html#ga865256d9e309eb64c77ba073ca53f6d0", null ],
+    [ "PersistAggregateLogic", "group__Chronos.html#gab6a37c0b1d871a0304f4e89fe8e35317", null ],
+    [ "PersistEvents", "group__Chronos.html#gad7ca7261b0789dd61ca81a60ee414f94", null ],
+    [ "PublishManagementNotification", "group__Chronos.html#gaf08457efe1c1b5f45451547f543b2fd6", null ],
+    [ "Subscribe", "group__Chronos.html#gab7cf7e29ee38e091d177b793abdc8b0c", null ],
+    [ "TryGetSnapshot", "group__Chronos.html#ga8a92959c83ea59013f94648eac6ec94b", null ],
+    [ "Unsubscribe", "group__Chronos.html#ga5d1257300d4e388a5061d8ffec6f1ff2", null ]
+];

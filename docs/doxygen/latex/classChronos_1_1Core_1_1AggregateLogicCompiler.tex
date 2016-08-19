@@ -1,0 +1,42 @@
+\hypertarget{classChronos_1_1Core_1_1AggregateLogicCompiler}{}\section{Chronos.\+Core.\+Aggregate\+Logic\+Compiler Class Reference}
+\label{classChronos_1_1Core_1_1AggregateLogicCompiler}\index{Chronos.\+Core.\+Aggregate\+Logic\+Compiler@{Chronos.\+Core.\+Aggregate\+Logic\+Compiler}}
+
+
+Handles all operations related to \hyperlink{classChronos_1_1Core_1_1Aggregate}{Aggregate} logic compilation.  
+
+
+Inheritance diagram for Chronos.\+Core.\+Aggregate\+Logic\+Compiler\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classChronos_1_1Core_1_1AggregateLogicCompiler}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def {\bfseries \+\_\+\+\_\+init\+\_\+\+\_\+} (self, event\+Store)
+\item 
+def \hyperlink{group__Chronos_ga751fbece3b09db34133314bfde9052f6}{Build\+Module} (self, aggregate\+Name, aggregate\+Logic)
+\begin{DoxyCompactList}\small\item\em Constructs a module containing the provided aggregate\+Logic, wired to the proper Protobuf entities. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga5c8b8498a50aa6157dbf12c35c09748f}{Compile} (self, aggregate\+Name, aggregate\+Logic)
+\begin{DoxyCompactList}\small\item\em Handles compilation and persistence of \hyperlink{classChronos_1_1Core_1_1Aggregate}{Aggregate} logic. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def {\bfseries Import\+Aggregate\+Logic} (aggregate\+Name)
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+{\bfseries event\+Store}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Handles all operations related to \hyperlink{classChronos_1_1Core_1_1Aggregate}{Aggregate} logic compilation. 
+
+\hyperlink{classChronos_1_1Core_1_1Aggregate}{Aggregate} logic is compiled into Python modules that are used by Chronos\+Process. In addition, this class handles the persistence of logic versions and ids so that events from the past can be replayed without worrying about backwards compatibility while making changes. 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Chronos/Core.\+py\end{DoxyCompactItemize}

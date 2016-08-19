@@ -1,0 +1,60 @@
+\hypertarget{classChronos_1_1Core_1_1Aggregate}{}\section{Chronos.\+Core.\+Aggregate Class Reference}
+\label{classChronos_1_1Core_1_1Aggregate}\index{Chronos.\+Core.\+Aggregate@{Chronos.\+Core.\+Aggregate}}
+
+
+The public \hyperlink{classChronos_1_1Core_1_1Aggregate}{Aggregate} base class.  
+
+
+Inheritance diagram for Chronos.\+Core.\+Aggregate\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=4.000000cm]{classChronos_1_1Core_1_1Aggregate}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def {\bfseries \+\_\+\+\_\+init\+\_\+\+\_\+} (self, aggregate\+Id, version, expiration)
+\item 
+def {\bfseries Is\+Valid} (self)
+\item 
+def {\bfseries Get\+Indices} (self)
+\item 
+def {\bfseries Has\+Diverged\+From} (self, previous\+Version)
+\item 
+def {\bfseries To\+Dict} (self)
+\item 
+def {\bfseries From\+Dict} (cls, dct)
+\item 
+def {\bfseries \+\_\+\+\_\+deepcopy\+\_\+\+\_\+} (self, memo)
+\item 
+def \hyperlink{group__Chronos_gad756f2fc68dddd2ffd3ce45ef50e6820}{\+\_\+\+\_\+getstate\+\_\+\+\_\+} (self)
+\begin{DoxyCompactList}\small\item\em For queries, \hyperlink{classChronos_1_1Core_1_1Aggregate}{Aggregate} instances must be pickleable. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+{\bfseries aggregate\+Id}
+\item 
+{\bfseries version}
+\item 
+{\bfseries expiration}
+\item 
+{\bfseries lock}
+\end{DoxyCompactItemize}
+\subsection*{Static Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+int {\bfseries Cache\+Size} = 1000
+\item 
+int {\bfseries Expiration} = 0
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+The public \hyperlink{classChronos_1_1Core_1_1Aggregate}{Aggregate} base class. 
+
+This mainly exists to connect \hyperlink{classChronos_1_1Core_1_1AggregateMeta}{Aggregate\+Meta} and \hyperlink{classChronos_1_1Core_1_1ChronosBase}{Chronos\+Base} so that the client can subclass a single class in their code. 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Chronos/Core.\+py\end{DoxyCompactItemize}

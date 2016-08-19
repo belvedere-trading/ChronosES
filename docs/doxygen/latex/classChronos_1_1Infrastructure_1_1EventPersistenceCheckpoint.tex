@@ -1,0 +1,36 @@
+\hypertarget{classChronos_1_1Infrastructure_1_1EventPersistenceCheckpoint}{}\section{Chronos.\+Infrastructure.\+Event\+Persistence\+Checkpoint Class Reference}
+\label{classChronos_1_1Infrastructure_1_1EventPersistenceCheckpoint}\index{Chronos.\+Infrastructure.\+Event\+Persistence\+Checkpoint@{Chronos.\+Infrastructure.\+Event\+Persistence\+Checkpoint}}
+Inheritance diagram for Chronos.\+Infrastructure.\+Event\+Persistence\+Checkpoint\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classChronos_1_1Infrastructure_1_1EventPersistenceCheckpoint}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def {\bfseries \+\_\+\+\_\+init\+\_\+\+\_\+} (self, max\+Request\+Id, aggregate\+Ids)
+\item 
+def {\bfseries Should\+Persist} (self)
+\item 
+def {\bfseries Serialize} (self)
+\item 
+def \hyperlink{group__Chronos_ga53d19167c4fc3cba7bb55c84ccdefbcd}{Verify\+Checkpoint} (self, index\+Store, index\+Session, aggregate\+Repository)
+\begin{DoxyCompactList}\small\item\em Verifies the integrity of indexed data by comparing the previously saved indexed checkpoint to the current data checkpoint. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def {\bfseries Deserialize} (dct)
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+{\bfseries max\+Request\+Id}
+\item 
+{\bfseries aggregate\+Ids}
+\end{DoxyCompactItemize}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Chronos/Infrastructure.\+py\end{DoxyCompactItemize}

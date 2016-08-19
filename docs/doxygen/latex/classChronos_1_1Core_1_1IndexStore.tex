@@ -1,0 +1,95 @@
+\hypertarget{classChronos_1_1Core_1_1IndexStore}{}\section{Chronos.\+Core.\+Index\+Store Class Reference}
+\label{classChronos_1_1Core_1_1IndexStore}\index{Chronos.\+Core.\+Index\+Store@{Chronos.\+Core.\+Index\+Store}}
+
+
+Handles all interaction relating to Chronos indexing functionality.  
+
+
+Inheritance diagram for Chronos.\+Core.\+Index\+Store\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classChronos_1_1Core_1_1IndexStore}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def {\bfseries \+\_\+\+\_\+init\+\_\+\+\_\+} (self, aggregate\+Class)
+\item 
+def {\bfseries Dispose} (self)
+\item 
+def {\bfseries Get\+Session} (self)
+\item 
+def \hyperlink{group__Chronos_gac76ddb048aa12434e964963fe6b08abc}{Get\+Checkpoint} (self, session)
+\begin{DoxyCompactList}\small\item\em Retrieves the current checkpoint information from the S\+Q\+Lite instance. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga999de3bf409634d23dbdce8483f38beb}{Update\+Checkpoint} (self, max\+Request\+Id, session)
+\begin{DoxyCompactList}\small\item\em Persists the provided max\+Request\+Id into the S\+Q\+Lite instance\textquotesingle{}s checkpoint. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gadee7d443d8b7f4f600db3e666388bfd2}{Reindex\+Aggregate} (self, aggregate, session)
+\begin{DoxyCompactList}\small\item\em Upserts the provided aggregate\textquotesingle{}s information into the underlying sqlite database. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga3f3b13bc9ea88c0ff50c1da74c76baa3}{Index\+Tag} (self, tag, aggregate\+Id, session)
+\begin{DoxyCompactList}\small\item\em Persists the provided tag information to the S\+Q\+Lite instance. \end{DoxyCompactList}\item 
+def {\bfseries Get\+Index\+Row} (self, aggregate\+Id)
+\item 
+def {\bfseries Get\+Tag\+Row} (self, aggregate\+Id, tag)
+\item 
+def {\bfseries Get\+Tags\+By\+Aggregate\+Id} (self, aggregate\+Id)
+\item 
+def {\bfseries Get\+All\+Tags} (self)
+\item 
+def \hyperlink{group__Chronos_gae214bee43e5148b5190c7ba0f6aa63ef}{Mark\+Tags\+As\+Archived} (self, tags)
+\begin{DoxyCompactList}\small\item\em Updates the provided tags to mark them as archived (no longer available via Redis). \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga04d2c0aa20ac6cfe356b724e8c62dd8b}{Mark\+As\+Archived} (self, aggregate\+Ids)
+\begin{DoxyCompactList}\small\item\em Updates the provided aggregate to mark it as archived. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gae824d1e632ce32a311c6a07756f17c28}{Update\+Max\+Archived\+Version} (self, aggregate\+Id, max\+Version)
+\begin{DoxyCompactList}\small\item\em Updates the provided aggregate with its maximum archived version. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga960e19d8f65569f80fd580eebd605031}{Retrieve\+Aggregate\+Ids} (self, is\+Archived=False, indices)
+\begin{DoxyCompactList}\small\item\em Returns a list of all aggregate\+Ids that satisfy the provided index properties. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga3e51459a6d624a6abf12d983139e6acd}{Retrieve\+Aggregates} (self, from\+Aggregate\+Id, return\+Count, is\+Archived=False, indices)
+\begin{DoxyCompactList}\small\item\em Returns a list of all aggregates and their index properties that satisfy the provided index properties. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def \hyperlink{group__Chronos_ga03ff3b6b6e521bc886259e7b8f390819}{Update\+Index\+Schema} (aggregate\+Class)
+\begin{DoxyCompactList}\small\item\em Executes an external procedure that updates the underlying sqlite database using an on-\/disk alembic configuration. \end{DoxyCompactList}\item 
+def {\bfseries Get\+Index\+Store} (aggregate\+Name, event\+Store, logic\+Compiler)
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+{\bfseries aggregate\+Class}
+\item 
+{\bfseries index\+Class}
+\item 
+{\bfseries tag\+Class}
+\item 
+{\bfseries checkpoint\+Class}
+\item 
+{\bfseries sqlite\+Path}
+\item 
+{\bfseries engine}
+\item 
+{\bfseries read\+Engine}
+\item 
+{\bfseries session\+Maker}
+\item 
+{\bfseries read\+Session\+Maker}
+\end{DoxyCompactItemize}
+\subsection*{Static Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+{\bfseries Schema\+Lock} = Lock()
+\item 
+string {\bfseries S\+Q\+Lite\+Path\+Template} = \textquotesingle{}sqlite\+:////var/lib/chronos/index.\+alembic/db/\{0\}.sqlite\textquotesingle{}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Handles all interaction relating to Chronos indexing functionality. 
+
+The \hyperlink{classChronos_1_1Core_1_1IndexStore}{Index\+Store} interfaces with sqlite databases instances that are persisted on disk as part of the Chronos running configuration. In production, these databases (and the entire Chronos running configuration) are persisted on network storage (the Nimble device, currently) in case of individual server failure.
+
+Instances of this class are not thread-\/safe. 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Chronos/Core.\+py\end{DoxyCompactItemize}

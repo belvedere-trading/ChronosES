@@ -1,0 +1,43 @@
+\hypertarget{classChronos_1_1Map_1_1LRUEvictingMap}{}\section{Chronos.\+Map.\+L\+R\+U\+Evicting\+Map Class Reference}
+\label{classChronos_1_1Map_1_1LRUEvictingMap}\index{Chronos.\+Map.\+L\+R\+U\+Evicting\+Map@{Chronos.\+Map.\+L\+R\+U\+Evicting\+Map}}
+
+
+A dictionary that maintains a predefined maximum capacity.  
+
+
+Inheritance diagram for Chronos.\+Map.\+L\+R\+U\+Evicting\+Map\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classChronos_1_1Map_1_1LRUEvictingMap}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def \hyperlink{group__PyInfrastructure_ga792e630c1a4c608f22ccbc4f784b710e}{\+\_\+\+\_\+init\+\_\+\+\_\+} (self, capacity=1000)
+\begin{DoxyCompactList}\small\item\em Create an instance of the dictionary with the specified maximum capacity. \end{DoxyCompactList}\item 
+def {\bfseries \+\_\+\+\_\+setitem\+\_\+\+\_\+} (self, key, value)
+\item 
+def {\bfseries \+\_\+\+\_\+getitem\+\_\+\+\_\+} (self, key)
+\item 
+def {\bfseries \+\_\+\+\_\+delitem\+\_\+\+\_\+} (self, key)
+\item 
+def {\bfseries keys} (self)
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+{\bfseries capacity}
+\item 
+{\bfseries cache}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+A dictionary that maintains a predefined maximum capacity. 
+
+Upon reaching capacity, \hyperlink{classChronos_1_1Map_1_1LRUEvictingMap}{L\+R\+U\+Evicting\+Map} will begin replacing the least recently used (L\+RU) item when new items are added to the dictionary. This container is N\+OT threadsafe. 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Chronos/\hyperlink{Map_8py}{Map.\+py}\end{DoxyCompactItemize}

@@ -1,0 +1,65 @@
+\hypertarget{classChronos_1_1Client_1_1SubscriptionManager}{}\section{Chronos.\+Client.\+Subscription\+Manager Class Reference}
+\label{classChronos_1_1Client_1_1SubscriptionManager}\index{Chronos.\+Client.\+Subscription\+Manager@{Chronos.\+Client.\+Subscription\+Manager}}
+
+
+Handles subscription logic for Chronos Client instances.  
+
+
+Inheritance diagram for Chronos.\+Client.\+Subscription\+Manager\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classChronos_1_1Client_1_1SubscriptionManager}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def \hyperlink{group__Chronos_ga17b0ece7d5be132801d46977ffac3bcc}{\+\_\+\+\_\+init\+\_\+\+\_\+} (self, event\+Store, aggregate\+Class, success\+Callback, failure\+Callback, management\+Callback)
+\begin{DoxyCompactList}\small\item\em Initializes a new \hyperlink{classChronos_1_1Client_1_1SubscriptionManager}{Subscription\+Manager} instance. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gae21ba8cca5cb7ffe3085e39b9ef18945}{Subscribe\+For\+Unified\+Updates} (self)
+\begin{DoxyCompactList}\small\item\em Subscribes {\ttfamily event\+Store} for Chronos failure and management messages. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga4d1b5c99ac9d282cd4a5b39f5ace3615}{Unsubscribe\+For\+Unified\+Updates} (self)
+\begin{DoxyCompactList}\small\item\em Unsubscribes for unified updates. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga83af8c47b1d510ea2aa638680b9304ed}{Subscribe} (self, indices)
+\begin{DoxyCompactList}\small\item\em Subscribes for messages for Aggregate instances that match the fields provided in {\ttfamily indices}. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga115103720707b543e309432166332e1d}{Unsubscribe} (self, indices)
+\begin{DoxyCompactList}\small\item\em Unsubscribes for messages previously registered by Subscribe. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gaef0709e91993c04a0e27eb158e4e8514}{Unsubscribe\+All} (self)
+\begin{DoxyCompactList}\small\item\em Unsubscribes for all updates previously registered by Subscribe. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga8c7e61cf993d0b145642c632f064921d}{Resubscribe} (self, indexed\+Attributes)
+\begin{DoxyCompactList}\small\item\em Processes the provided {\ttfamily indexed\+Attributes} and determines if currently registered subscriptions have to be renewed. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+{\bfseries event\+Store}
+\item 
+{\bfseries aggregate\+Name}
+\item 
+{\bfseries success\+Callback}
+\item 
+{\bfseries failure\+Callback}
+\item 
+{\bfseries management\+Callback}
+\item 
+{\bfseries subscription\+Prefix}
+\item 
+{\bfseries failure\+Channel}
+\item 
+{\bfseries management\+Channel}
+\item 
+{\bfseries subscriptions}
+\item 
+{\bfseries lock}
+\item 
+{\bfseries indexed\+Attributes}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Handles subscription logic for Chronos Client instances. 
+
+\hyperlink{classChronos_1_1Client_1_1SubscriptionManager}{Subscription\+Manager} is primarily responsible for ensuring that subscriptions remain consistent through Redis failures and Chronos index schema divergence. 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Chronos/Client.\+py\end{DoxyCompactItemize}

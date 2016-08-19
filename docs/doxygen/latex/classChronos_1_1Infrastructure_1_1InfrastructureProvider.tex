@@ -1,0 +1,54 @@
+\hypertarget{classChronos_1_1Infrastructure_1_1InfrastructureProvider}{}\section{Chronos.\+Infrastructure.\+Infrastructure\+Provider Class Reference}
+\label{classChronos_1_1Infrastructure_1_1InfrastructureProvider}\index{Chronos.\+Infrastructure.\+Infrastructure\+Provider@{Chronos.\+Infrastructure.\+Infrastructure\+Provider}}
+
+
+Parses an optional configuration file to determine which \char`\"{}pluggable\char`\"{} components should be used by an instance of the Chronos service.  
+
+
+Inheritance diagram for Chronos.\+Infrastructure.\+Infrastructure\+Provider\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classChronos_1_1Infrastructure_1_1InfrastructureProvider}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def \hyperlink{group__Chronos_gafcca7af6894603b63cf1340ea78429df}{\+\_\+\+\_\+init\+\_\+\+\_\+} (self)
+\begin{DoxyCompactList}\small\item\em Instantiates a new \hyperlink{classChronos_1_1Infrastructure_1_1InfrastructureProvider}{Infrastructure\+Provider} instance. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga747229914c9f0788c88c3ba985224dcb}{Overrides\+Exist} (self)
+\begin{DoxyCompactList}\small\item\em Checks whether or not configured overrides were found. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga5ff90b1f8833a5d3b527fc0a746e088d}{Get\+Section} (self, section)
+\begin{DoxyCompactList}\small\item\em Returns the data for a configuration section as a dictionary. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga5793a6dd67790fc5c73518eb71ec93ab}{Get\+Configurable\+Plugin} (self, plugin\+Type, kwargs)
+\begin{DoxyCompactList}\small\item\em Constructs and returns a specific plugin implementation. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+{\bfseries config}
+\end{DoxyCompactItemize}
+\subsection*{Static Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+string {\bfseries Config\+File\+Path} = \textquotesingle{}/etc/chronos/config.\+ini\textquotesingle{}
+\item 
+dictionary {\bfseries Configurable\+Plugin\+Structure}
+\item 
+dictionary {\bfseries Configurable\+Plugin\+Processors}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Parses an optional configuration file to determine which \char`\"{}pluggable\char`\"{} components should be used by an instance of the Chronos service. 
+
+The file should have the following format. All sections are optional, but if a section is supplied, it should be fully specified.
+
+\mbox{[}Event\+Store\mbox{]} file\+Path=$<$path$>$ class\+Name=$<$name$>$
+
+\mbox{[}Transport\+Layer\mbox{]} file\+Path=$<$path$>$ service\+Class\+Name=$<$name$>$ client\+Class\+Name=$<$name$>$
+
+\mbox{[}Service\+Proxy\+Manager\mbox{]} file\+Path=$<$path$>$ class\+Name=$<$name$>$ 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Chronos/Infrastructure.\+py\end{DoxyCompactItemize}

@@ -1,0 +1,40 @@
+\hypertarget{classChronos_1_1Infrastructure_1_1AbstractClientProxy}{}\section{Chronos.\+Infrastructure.\+Abstract\+Client\+Proxy Class Reference}
+\label{classChronos_1_1Infrastructure_1_1AbstractClientProxy}\index{Chronos.\+Infrastructure.\+Abstract\+Client\+Proxy@{Chronos.\+Infrastructure.\+Abstract\+Client\+Proxy}}
+Inheritance diagram for Chronos.\+Infrastructure.\+Abstract\+Client\+Proxy\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=3.000000cm]{classChronos_1_1Infrastructure_1_1AbstractClientProxy}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def \hyperlink{group__Chronos_ga6a38ae27f3142c98e72c1835ddd3a17c}{\+\_\+\+\_\+init\+\_\+\+\_\+} (self, infrastructure\+Provider)
+\begin{DoxyCompactList}\small\item\em The main purpose of this class (along with \hyperlink{classChronos_1_1Infrastructure_1_1AbstractServiceImplementations}{Abstract\+Service\+Implementations}) is to decouple Chronos\+ES from a specific transport implementation. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga9db2d08d508fec263a1ac0ab32f35270}{Register\+Aggregate} (self, chronos\+Request)
+\begin{DoxyCompactList}\small\item\em Registers an Aggregate\textquotesingle{}s data model and logic with the Chronos\+ES service. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga14714722b17498ad6577150842e8913a}{Unregister\+Aggregate} (self, aggregate\+Name)
+\begin{DoxyCompactList}\small\item\em Unregisters an Aggregate with the Chronos\+ES service. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga8637a20ab0e90916d8d59b43900a5c30}{Check\+Status} (self, aggregate\+Name)
+\begin{DoxyCompactList}\small\item\em Returns the current registration status of an Aggregate. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gacc2169d49a6cf3a6947b6362adce3669}{Process\+Event} (self, chronos\+Request)
+\begin{DoxyCompactList}\small\item\em Enqueues an Event for future processing on an Aggregate instance. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga5111d259b3175c8ce60ebb40ce99cdb6}{Process\+Event\+With\+Tag} (self, chronos\+Request)
+\begin{DoxyCompactList}\small\item\em Identical to \hyperlink{group__Chronos_gacc2169d49a6cf3a6947b6362adce3669}{Abstract\+Client\+Proxy\+::\+Process\+Event}, except that the resulting Aggregate instance\textquotesingle{}s state will be tagged with the provided tag. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga008afdc8115dff35614c7d68a40fb411}{Process\+Transaction} (self, chronos\+Request)
+\begin{DoxyCompactList}\small\item\em Atomically enqueues multiple Events for future processing on Aggregate instances. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga3df0cb678abe0f8ffbcbf691ad8c1b31}{Get\+All} (self, chronos\+Request)
+\begin{DoxyCompactList}\small\item\em Returns all Aggregate instance snapshots. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga086cc33a41671e67f00f4424397753ed}{Get\+By\+Id} (self, chronos\+Request)
+\begin{DoxyCompactList}\small\item\em Returns the Aggregate instance snapshot for the specified aggregate\+Id. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga27d06ec274dfeed3590002c4dcb74c55}{Get\+By\+Index} (self, chronos\+Request)
+\begin{DoxyCompactList}\small\item\em Returns the Aggregate instance snapshots that satisfy the specified indicies. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga540c48883317067ab1f56212487ba1a2}{Get\+By\+Tag} (self, chronos\+Request)
+\begin{DoxyCompactList}\small\item\em Returns the Aggregate instance snapshot for the specified tag. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gab81f0f1ed3d38772056236c66a99cb25}{Get\+Tags} (self, aggregate\+Name)
+\begin{DoxyCompactList}\small\item\em Returns all tags for the specified Aggregate instance. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Chronos/Infrastructure.\+py\end{DoxyCompactItemize}

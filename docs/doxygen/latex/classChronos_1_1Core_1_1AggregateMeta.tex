@@ -1,0 +1,62 @@
+\hypertarget{classChronos_1_1Core_1_1AggregateMeta}{}\section{Chronos.\+Core.\+Aggregate\+Meta Class Reference}
+\label{classChronos_1_1Core_1_1AggregateMeta}\index{Chronos.\+Core.\+Aggregate\+Meta@{Chronos.\+Core.\+Aggregate\+Meta}}
+
+
+Validates and sets up classes as proper Chronos Aggregates.  
+
+
+Inheritance diagram for Chronos.\+Core.\+Aggregate\+Meta\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=3.000000cm]{classChronos_1_1Core_1_1AggregateMeta}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def {\bfseries \+\_\+\+\_\+init\+\_\+\+\_\+} (cls, name, bases, dct)
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+{\bfseries Dependencies}
+\item 
+{\bfseries Indexed\+Attributes}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Validates and sets up classes as proper Chronos Aggregates. 
+
+Defining an \hyperlink{classChronos_1_1Core_1_1AggregateMeta}{Aggregate\+Meta} will enforce that only a single \hyperlink{classChronos_1_1Core_1_1AggregateMeta}{Aggregate\+Meta} exists in the current module, and then will modify the module in preparation for event registration.
+
+In addition, if an Index\+Key property exists on the class, it will be validated against the underlying protobuf class members, and class members will be set accordingly on the \hyperlink{classChronos_1_1Core_1_1Aggregate}{Aggregate} class.
+
+For example, consider the following Protobuf message\+: 
+\begin{DoxyCode}
+1 message AProtobufMessage \{
+2     optional string firmName = 1;
+3     optional string infoSysName = 2;
+4     optional string traderAcronym = 3;
+5 \}
+\end{DoxyCode}
+
+
+If the following module is declared\+: 
+\begin{DoxyCode}
+1 \textcolor{keyword}{class }AnIndex(ChronosIndex):
+2     firmName = Column(String)
+3     infoSysName = Column(String)
+4     constraints = [UniqueConstraint(\textcolor{stringliteral}{'firmName'}, \textcolor{stringliteral}{'infoSysName'}, name=\textcolor{stringliteral}{'ux\_1'})]
+5 
+6 \textcolor{keyword}{class }AnAggregate(Aggregate):
+7     Proto = AProtobufMessage
+8     Index = AnIndex
+\end{DoxyCode}
+
+
+Then Chronos will automatically generate the necessary metadata to allow for querying of An\+Aggregate by firm\+Name and info\+Sys\+Name. The provided unique constraint will also be enforced for both aggregate creation and modification. 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Chronos/Core.\+py\end{DoxyCompactItemize}

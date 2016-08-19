@@ -1,0 +1,47 @@
+\hypertarget{classChronos_1_1Core_1_1ChronosIndex}{}\section{Chronos.\+Core.\+Chronos\+Index Class Reference}
+\label{classChronos_1_1Core_1_1ChronosIndex}\index{Chronos.\+Core.\+Chronos\+Index@{Chronos.\+Core.\+Chronos\+Index}}
+
+
+The declarative base class for Chronos indices.  
+
+
+Inheritance diagram for Chronos.\+Core.\+Chronos\+Index\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=4.000000cm]{classChronos_1_1Core_1_1ChronosIndex}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def {\bfseries \+\_\+\+\_\+tablename\+\_\+\+\_\+} (cls)
+\item 
+def {\bfseries \+\_\+\+\_\+mapper\+\_\+args\+\_\+\+\_\+} (cls)
+\item 
+def {\bfseries Create\+Tag\+Model} (cls)
+\item 
+def {\bfseries Create\+Checkpoint\+Model} (cls)
+\end{DoxyCompactItemize}
+\subsection*{Static Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+tuple {\bfseries Shared\+Properties} = (\textquotesingle{}aggregate\+Id\textquotesingle{}, \textquotesingle{}is\+Archived\textquotesingle{}, \textquotesingle{}max\+Archived\+Version\textquotesingle{})
+\item 
+{\bfseries aggregate\+Id} = Column(Big\+Integer, primary\+\_\+key=True, autoincrement=False, nullable=False)
+\item 
+{\bfseries is\+Archived} = Column(Boolean, nullable=False, default=False)
+\item 
+{\bfseries max\+Archived\+Version} = Column(Big\+Integer, nullable=False, default=0)
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+The declarative base class for Chronos indices. 
+
+This class expects subclasses to declare any aggregate properties that should be indexed as S\+Q\+L\+Alchemy Columns. Any constraints or sql indices should be provided via the constraints classmember.
+
+It is important that the class name of a Chronos index class never changes -\/ this would cause a discrepancy in index table names through time and could result in permanent data loss. 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Chronos/Core.\+py\end{DoxyCompactItemize}

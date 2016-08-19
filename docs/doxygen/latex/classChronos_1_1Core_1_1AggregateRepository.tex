@@ -1,0 +1,67 @@
+\hypertarget{classChronos_1_1Core_1_1AggregateRepository}{}\section{Chronos.\+Core.\+Aggregate\+Repository Class Reference}
+\label{classChronos_1_1Core_1_1AggregateRepository}\index{Chronos.\+Core.\+Aggregate\+Repository@{Chronos.\+Core.\+Aggregate\+Repository}}
+
+
+The in-\/memory representation of the current state of all aggregates within an aggregate root.  
+
+
+Inheritance diagram for Chronos.\+Core.\+Aggregate\+Repository\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classChronos_1_1Core_1_1AggregateRepository}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def {\bfseries \+\_\+\+\_\+init\+\_\+\+\_\+} (self, aggregate\+Class, index\+Store, event\+Store)
+\item 
+def {\bfseries Begin} (self)
+\item 
+def {\bfseries Commit} (self)
+\item 
+def {\bfseries Rollback} (self)
+\item 
+def \hyperlink{group__Chronos_ga631476634e37f9961dba1bb160bb9ee5}{Create} (self)
+\begin{DoxyCompactList}\small\item\em Creates a new uninitialized aggregate, permanently incrementing the aggregate root id in the event store. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga8b9bae0731e091c9f2a79803149f5449}{Get} (self, aggregate\+Id)
+\begin{DoxyCompactList}\small\item\em Retrieves a single aggregate snaphost using the provided id. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga21a75e7e033c6cf88ac47d6525f8c991}{Atomic\+Get} (self, aggregate\+Id)
+\begin{DoxyCompactList}\small\item\em Retrieves a single aggregate snapshot for dependency acquisition. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga5034ab423a49b011e6f90460ddd4e70e}{Emplace} (self, aggregate)
+\begin{DoxyCompactList}\small\item\em Replaces an existing aggregate with its new state. \end{DoxyCompactList}\item 
+def {\bfseries Get\+Event\+Persistence\+Checkpoint} (self)
+\item 
+def \hyperlink{group__Chronos_gac9cde7c90df6d8e1d0c0166cfa87358c}{Get\+All} (self)
+\begin{DoxyCompactList}\small\item\em Retrieves all aggregate snapshots available in the event store and returns them. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga4abb70024e82d3dca4f92c634bdc4bfd}{Get\+From\+Index} (self, kwargs)
+\begin{DoxyCompactList}\small\item\em Retrieves all aggregates that satisfy the provided index contraints. \end{DoxyCompactList}\item 
+def {\bfseries Get\+Tag} (self, aggregate\+Id, tag)
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+{\bfseries aggregate\+Class}
+\item 
+{\bfseries index\+Store}
+\item 
+{\bfseries event\+Store}
+\item 
+{\bfseries repository}
+\item 
+{\bfseries transaction\+Repository}
+\item 
+{\bfseries transaction\+Lock}
+\item 
+{\bfseries transaction\+Event}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+The in-\/memory representation of the current state of all aggregates within an aggregate root. 
+
+\hyperlink{classChronos_1_1Core_1_1AggregateRepository}{Aggregate\+Repository} handles interaction with an event store to return aggregates to the user. 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Chronos/Core.\+py\end{DoxyCompactItemize}

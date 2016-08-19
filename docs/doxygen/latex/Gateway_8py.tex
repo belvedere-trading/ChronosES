@@ -1,0 +1,43 @@
+\hypertarget{Gateway_8py}{}\section{Chronos/\+Gateway.py File Reference}
+\label{Gateway_8py}\index{Chronos/\+Gateway.\+py@{Chronos/\+Gateway.\+py}}
+
+
+Interaction logic for the Chronos A\+PI.  
+
+
+\subsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classChronos_1_1Gateway_1_1ChronosGatewayException}{Chronos.\+Gateway.\+Chronos\+Gateway\+Exception}
+\begin{DoxyCompactList}\small\item\em An Exception indicating that Chronos has encountered an error from which it is unable to recover. \end{DoxyCompactList}\item 
+class \hyperlink{classChronos_1_1Gateway_1_1ChronosQueryItem}{Chronos.\+Gateway.\+Chronos\+Query\+Item}
+\begin{DoxyCompactList}\small\item\em A simple wrapper that unifies the three possible Chronos query types into a single request object. \end{DoxyCompactList}\item 
+class \hyperlink{classChronos_1_1Gateway_1_1ChronosProcess}{Chronos.\+Gateway.\+Chronos\+Process}
+\begin{DoxyCompactList}\small\item\em The main logical component of the \hyperlink{classChronos_1_1Gateway_1_1ChronosGateway}{Chronos\+Gateway}. \end{DoxyCompactList}\item 
+class \hyperlink{classChronos_1_1Gateway_1_1ChronosProcessManager}{Chronos.\+Gateway.\+Chronos\+Process\+Manager}
+\begin{DoxyCompactList}\small\item\em The multiprocessing.\+Manager that marshalls instances of \hyperlink{classChronos_1_1Gateway_1_1ChronosProcess}{Chronos\+Process} into their own physical processes on the server. \end{DoxyCompactList}\item 
+class \hyperlink{classChronos_1_1Gateway_1_1ChronosRegistryItem}{Chronos.\+Gateway.\+Chronos\+Registry\+Item}
+\begin{DoxyCompactList}\small\item\em Associates a \hyperlink{classChronos_1_1Gateway_1_1ChronosProcessManager}{Chronos\+Process\+Manager} with its \hyperlink{classChronos_1_1Gateway_1_1ChronosProcess}{Chronos\+Process} instance. \end{DoxyCompactList}\item 
+class \hyperlink{classChronos_1_1Gateway_1_1StatisticsLogger}{Chronos.\+Gateway.\+Statistics\+Logger}
+\begin{DoxyCompactList}\small\item\em Aggregates and logs statistics about Chronos operations. \end{DoxyCompactList}\item 
+class \hyperlink{classChronos_1_1Gateway_1_1ChronosGateway}{Chronos.\+Gateway.\+Chronos\+Gateway}
+\begin{DoxyCompactList}\small\item\em The main server implementation. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+{\bfseries Chronos.\+Gateway.\+Chronos\+Event\+Queue\+Item}
+\item 
+{\bfseries Chronos.\+Gateway.\+Chronos\+Event\+Queue\+Transaction} = namedtuple(\textquotesingle{}Chronos\+Event\+Queue\+Transaction\textquotesingle{}, \mbox{[}\textquotesingle{}events\textquotesingle{}\mbox{]})
+\item 
+{\bfseries Chronos.\+Gateway.\+application}
+\item 
+{\bfseries Chronos.\+Gateway.\+I\+N\+F\+R\+A\+S\+T\+R\+U\+C\+T\+U\+R\+E\+P\+R\+O\+V\+I\+D\+ER} = Infrastructure\+Provider()
+\item 
+{\bfseries Chronos.\+Gateway.\+S\+E\+R\+V\+I\+CE} = I\+N\+F\+R\+A\+S\+T\+R\+U\+C\+T\+U\+R\+E\+P\+R\+O\+V\+I\+D\+E\+R.\+Get\+Configurable\+Plugin(Configurable\+Plugin.\+Transport\+Layer, transport\+Type=Transport\+Type.\+Service)
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Interaction logic for the Chronos A\+PI. 
+
+The Chronos\+Gateway class is the external entrypoint into the Chronos service. When requests are received from clients, Chronos\+Gateway routes them to their appropriate Chronos\+Process instances. 

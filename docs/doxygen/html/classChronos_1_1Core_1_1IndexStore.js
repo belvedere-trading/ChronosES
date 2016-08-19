@@ -1,0 +1,28 @@
+var classChronos_1_1Core_1_1IndexStore =
+[
+    [ "__init__", "group__Chronos.html#gad4b4a883f7bd0db3b1cf8e6696bcc4e8", null ],
+    [ "Dispose", "group__Chronos.html#ga9ce7cd4a80dd03c4096d995b87341ddc", null ],
+    [ "GetAllTags", "group__Chronos.html#ga39a553eaf5ed15bde30c2b43f2b563c5", null ],
+    [ "GetCheckpoint", "group__Chronos.html#gac76ddb048aa12434e964963fe6b08abc", null ],
+    [ "GetIndexRow", "group__Chronos.html#ga9ff8f951ec78b029d0cf0fd6e40fadcd", null ],
+    [ "GetSession", "group__Chronos.html#gaf712c2a0ebb64ebf0ec3d7ec07a42a19", null ],
+    [ "GetTagRow", "group__Chronos.html#ga7f7d088a9f6b764d14699b9972349342", null ],
+    [ "GetTagsByAggregateId", "group__Chronos.html#ga3ad55e4eb49cc32f7e2ff9584041b815", null ],
+    [ "IndexTag", "group__Chronos.html#ga3f3b13bc9ea88c0ff50c1da74c76baa3", null ],
+    [ "MarkAsArchived", "group__Chronos.html#ga04d2c0aa20ac6cfe356b724e8c62dd8b", null ],
+    [ "MarkTagsAsArchived", "group__Chronos.html#gae214bee43e5148b5190c7ba0f6aa63ef", null ],
+    [ "ReindexAggregate", "group__Chronos.html#gadee7d443d8b7f4f600db3e666388bfd2", null ],
+    [ "RetrieveAggregateIds", "group__Chronos.html#ga960e19d8f65569f80fd580eebd605031", null ],
+    [ "RetrieveAggregates", "group__Chronos.html#ga3e51459a6d624a6abf12d983139e6acd", null ],
+    [ "UpdateCheckpoint", "group__Chronos.html#ga999de3bf409634d23dbdce8483f38beb", null ],
+    [ "UpdateMaxArchivedVersion", "group__Chronos.html#gae824d1e632ce32a311c6a07756f17c28", null ],
+    [ "aggregateClass", "group__Chronos.html#ga3ea2eb1863511c1b44135f5d9bc20465", null ],
+    [ "checkpointClass", "group__Chronos.html#gabc7328a5734b8e3047a1a53cda0f41ce", null ],
+    [ "engine", "group__Chronos.html#gad29ca671e4a0cacfe5042a0869518050", null ],
+    [ "indexClass", "group__Chronos.html#gae52572b5b7e8ff292504964e99316c87", null ],
+    [ "readEngine", "group__Chronos.html#ga95e7204acdf29be21ebd40bfcc075890", null ],
+    [ "readSessionMaker", "group__Chronos.html#ga0ffcf98b6d9389bec977d0566e538afb", null ],
+    [ "sessionMaker", "group__Chronos.html#ga798d20ab91e8bf36e291729c4d8cf6c9", null ],
+    [ "sqlitePath", "group__Chronos.html#gad477c7768e5bd1f80c9b5d1a5cff484e", null ],
+    [ "tagClass", "group__Chronos.html#ga245371a936b284cca0a4a53e5dc6f696", null ]
+];

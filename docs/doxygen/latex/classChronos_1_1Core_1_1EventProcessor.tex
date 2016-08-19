@@ -1,0 +1,72 @@
+\hypertarget{classChronos_1_1Core_1_1EventProcessor}{}\section{Chronos.\+Core.\+Event\+Processor Class Reference}
+\label{classChronos_1_1Core_1_1EventProcessor}\index{Chronos.\+Core.\+Event\+Processor@{Chronos.\+Core.\+Event\+Processor}}
+
+
+Handles processing and replay of events against aggregate instances.  
+
+
+Inheritance diagram for Chronos.\+Core.\+Event\+Processor\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classChronos_1_1Core_1_1EventProcessor}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def {\bfseries \+\_\+\+\_\+init\+\_\+\+\_\+} (self, event\+Store, logic\+Compiler, persistence\+Pool=None)
+\item 
+def {\bfseries Begin} (self)
+\item 
+def {\bfseries Commit} (self)
+\item 
+def {\bfseries Rollback} (self)
+\item 
+def \hyperlink{group__Chronos_gaa715d77da2ab4a07c97ddc27b6691b69}{Process} (self, request, aggregate, single\+Event)
+\begin{DoxyCompactList}\small\item\em Applies the provided event to the provided aggregate. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gaef2d2639259438495b17f1ab5903bbb7}{Process\+Index\+Divergence} (self, aggregate\+Class, aggregate\+Id)
+\begin{DoxyCompactList}\small\item\em Notifies clients that an aggregate instance has diverged indices. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga9ec5fe085282e9ee1909ee9b5752e44b}{Process\+Failure} (self, request, aggregate\+Class, exception)
+\begin{DoxyCompactList}\small\item\em Notifies clients that an event processing request has failed. \end{DoxyCompactList}\item 
+def {\bfseries Process\+Tag} (self, aggregate, tag, tag\+Expiration, create\+Date=long(time.\+time()))
+\item 
+def {\bfseries Enqueue\+For\+Persistence} (self, buffer\+Item)
+\item 
+def {\bfseries Flush\+Persistence\+Buffer} (self, aggregate\+Class, should\+Force=False)
+\item 
+def \hyperlink{group__Chronos_gab6aa538a4b382256b1b168a274adab7f}{Replay\+By\+Timestamp\+Range} (self, aggregate, from\+Timestamp, to\+Timestamp)
+\begin{DoxyCompactList}\small\item\em Applies all events processed later than the from\+Timestamp and before the to\+Timestamp of the supplied aggregate to the same instance. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gae2b807dba975704f1e383eef0df911c6}{Replay\+To\+Version} (self, aggregate, to\+Version)
+\begin{DoxyCompactList}\small\item\em Applies all events later than the current version of the supplied aggregate to that same instance. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+{\bfseries event\+Store}
+\item 
+{\bfseries logic\+Compiler}
+\item 
+{\bfseries persistence\+Buffer}
+\item 
+{\bfseries persistence\+Pool}
+\item 
+{\bfseries lock}
+\item 
+{\bfseries is\+Replaying}
+\item 
+{\bfseries transaction\+Buffer}
+\end{DoxyCompactItemize}
+\subsection*{Static Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+int {\bfseries Max\+Buffered\+Events} = 15
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Handles processing and replay of events against aggregate instances. 
+
+This class is thread-\/safe. 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Chronos/Core.\+py\end{DoxyCompactItemize}

@@ -1,0 +1,91 @@
+\hypertarget{classChronos_1_1Gateway_1_1ChronosGateway}{}\section{Chronos.\+Gateway.\+Chronos\+Gateway Class Reference}
+\label{classChronos_1_1Gateway_1_1ChronosGateway}\index{Chronos.\+Gateway.\+Chronos\+Gateway@{Chronos.\+Gateway.\+Chronos\+Gateway}}
+
+
+The main server implementation.  
+
+
+Inheritance diagram for Chronos.\+Gateway.\+Chronos\+Gateway\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classChronos_1_1Gateway_1_1ChronosGateway}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def {\bfseries \+\_\+\+\_\+init\+\_\+\+\_\+} (self, event\+Store, synchronization\+Manager, core\+Provider\+Generator)
+\item 
+def \hyperlink{group__Chronos_ga6d1d412b8ee16cf3bf7be976a4041ced}{Load\+Registry} (self)
+\begin{DoxyCompactList}\small\item\em If a previous instance of the \hyperlink{classChronos_1_1Gateway_1_1ChronosGateway}{Chronos\+Gateway} persisted registry information to disk, this method will re-\/register all previously registered aggregate logic. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga20a6380c276ad93d3f59832c88b1b863}{Save\+Registry} (self)
+\begin{DoxyCompactList}\small\item\em Persists registry information to disk for reloading upon gateway startup. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga99107362643b72b54fdabf6d6d5ab0e9}{Register} (self, request)
+\begin{DoxyCompactList}\small\item\em Compiles protobuf messages and Python logic for Aggregate registration, then updates the current state of the server. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga4e8e260962d11dc692f37a03da88e48a}{Add\+Registry\+Item} (self, logic\+Version, module)
+\begin{DoxyCompactList}\small\item\em Creates a new \hyperlink{classChronos_1_1Gateway_1_1ChronosProcessManager}{Chronos\+Process\+Manager} and \hyperlink{classChronos_1_1Gateway_1_1ChronosProcess}{Chronos\+Process} for the module created from a Chronos\+Registration\+Request. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga62459e3c9eae9e1ea22841512298b40b}{Get\+Registry\+Item} (self, aggregate\+Name)
+\begin{DoxyCompactList}\small\item\em Retrieves the \hyperlink{classChronos_1_1Gateway_1_1ChronosRegistryItem}{Chronos\+Registry\+Item} for the given aggregate. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gaf1f7b9953b7fd0e2ef47e55405c66acc}{Unregister} (self, aggregate\+Name)
+\begin{DoxyCompactList}\small\item\em Shuts down the \hyperlink{classChronos_1_1Gateway_1_1ChronosProcessManager}{Chronos\+Process\+Manager} and \hyperlink{classChronos_1_1Gateway_1_1ChronosProcess}{Chronos\+Process} for the supplied aggregate. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga9355f09e2f692b2d379033d69d5a02fa}{Check\+Status} (self, aggregate\+Name)
+\begin{DoxyCompactList}\small\item\em Returns a Chronos\+Registration\+Response detailing the current status of {\ttfamily aggregate\+Name}. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gacbe9f7549ce9b5f11f2cb3d4dca74638}{Route\+Event} (self, request)
+\begin{DoxyCompactList}\small\item\em Creates a Chronos\+Event\+Queue\+Item and enqueues it for processing by the correct \hyperlink{classChronos_1_1Gateway_1_1ChronosProcess}{Chronos\+Process} instance. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gaea90e7dc86d552e1e9f9b66d47858d37}{Route\+Event\+With\+Tag} (self, request)
+\begin{DoxyCompactList}\small\item\em Creates a Chronos\+Event\+Queue\+Item and enqueues it for processing by the correct \hyperlink{classChronos_1_1Gateway_1_1ChronosProcess}{Chronos\+Process} instance. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gaa906b0081fb403254dc6fcc4d718629f}{Route\+Transaction} (self, transaction)
+\begin{DoxyCompactList}\small\item\em Creates a Chronos\+Transaction\+Queue\+Item and enqueues it for processing by the correct \hyperlink{classChronos_1_1Gateway_1_1ChronosProcess}{Chronos\+Process} instance. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gab8200236e0e382a3f1fa576190267513}{Get\+All} (self, request)
+\begin{DoxyCompactList}\small\item\em Retrieves all snapshots for the supplied Aggregate. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga1dd0cc5ef184d3634b482e16bdfaaffe}{Get\+By\+Id} (self, request)
+\begin{DoxyCompactList}\small\item\em Retrieves the snapshot for the supplied aggregate. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga46ee58f34474277a9b54d3e1814c8115}{Get\+By\+Index} (self, request)
+\begin{DoxyCompactList}\small\item\em Retrieves all snapshots for the supplied Aggregate that satisfy the supplied index key. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga3abe9fb6af06ad9e1cce2a645624dbbe}{Get\+By\+Tag} (self, request)
+\begin{DoxyCompactList}\small\item\em Retrieves the tagged snapshot corresponding to the given request. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga66539ba88e0de9efc24890c09a720b7e}{Get\+Tags} (self, aggregate\+Name)
+\begin{DoxyCompactList}\small\item\em Retrieves all tags for the provided Aggregate. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gafce09c1b25233cee3a27f22c1073896e}{Shutdown} (self)
+\begin{DoxyCompactList}\small\item\em Shuts down all registered \hyperlink{classChronos_1_1Gateway_1_1ChronosProcessManager}{Chronos\+Process\+Manager} and \hyperlink{classChronos_1_1Gateway_1_1ChronosProcess}{Chronos\+Process} instances. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def {\bfseries Create\+Registration\+Response} (error\+Message=\textquotesingle{}\textquotesingle{}, indexed\+Attributes=None)
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+{\bfseries event\+Store}
+\item 
+{\bfseries synchronization\+Manager}
+\item 
+{\bfseries core\+Provider\+Generator}
+\item 
+{\bfseries logic\+Compiler}
+\item 
+{\bfseries statistics\+Logger}
+\item 
+{\bfseries request\+Id\+Lock}
+\item 
+{\bfseries registry\+Lock}
+\item 
+{\bfseries registry}
+\item 
+{\bfseries request\+Id\+Counter}
+\end{DoxyCompactItemize}
+\subsection*{Static Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+string {\bfseries Registered\+Modules\+Path} = \textquotesingle{}modules.\+dat\textquotesingle{}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+The main server implementation. 
+
+The \hyperlink{classChronos_1_1Gateway_1_1ChronosGateway}{Chronos\+Gateway} handles registration of aggregate/event logic from clients and routes event/query requests to the proper \hyperlink{classChronos_1_1Gateway_1_1ChronosProcess}{Chronos\+Process}. 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Chronos/\hyperlink{Gateway_8py}{Gateway.\+py}\end{DoxyCompactItemize}

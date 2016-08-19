@@ -1,0 +1,48 @@
+\hypertarget{Dependency_8py}{}\section{Chronos/\+Dependency.py File Reference}
+\label{Dependency_8py}\index{Chronos/\+Dependency.\+py@{Chronos/\+Dependency.\+py}}
+
+
+Logic for handling synchronization dependencies between Chronos Aggregates.  
+
+
+\subsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classChronos_1_1Dependency_1_1dependent__upon}{Chronos.\+Dependency.\+dependent\+\_\+upon}
+\begin{DoxyCompactList}\small\item\em An optional class decorator for use with \hyperlink{classChronos_1_1Core_1_1Event}{Chronos\+::\+Core\+::\+Event} subclasses specifying an external dependency on another Aggregate instance. \end{DoxyCompactList}\item 
+class \hyperlink{classChronos_1_1Dependency_1_1CircularReferenceException}{Chronos.\+Dependency.\+Circular\+Reference\+Exception}
+\item 
+class \hyperlink{classChronos_1_1Dependency_1_1AggregateSynchronizationManager}{Chronos.\+Dependency.\+Aggregate\+Synchronization\+Manager}
+\begin{DoxyCompactList}\small\item\em Orchestrates a single-\/depth dependency tree of \hyperlink{classChronos_1_1Gateway_1_1ChronosProcess}{Chronos\+::\+Gateway\+::\+Chronos\+Process} instances. \end{DoxyCompactList}\item 
+class \hyperlink{classChronos_1_1Dependency_1_1DependenciesNotReleased}{Chronos.\+Dependency.\+Dependencies\+Not\+Released}
+\item 
+class \hyperlink{classChronos_1_1Dependency_1_1MissingDependency}{Chronos.\+Dependency.\+Missing\+Dependency}
+\item 
+class \hyperlink{classChronos_1_1Dependency_1_1ChronosProcessSynchronizer}{Chronos.\+Dependency.\+Chronos\+Process\+Synchronizer}
+\begin{DoxyCompactList}\small\item\em A utility class that encapsulates remote synchronization logic. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+def {\bfseries Chronos.\+Dependency.\+\_\+\+\_\+init\+\_\+\+\_\+} (self, aggregate\+Name, destination\+Property, event\+Source\+Property=None, aggregate\+Source\+Property=None)
+\item 
+def {\bfseries Chronos.\+Dependency.\+\_\+\+\_\+call\+\_\+\+\_\+} (self, cls)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+{\bfseries Chronos.\+Dependency.\+Aggregate\+Dependency} = namedtuple(\textquotesingle{}Aggregate\+Dependency\textquotesingle{}, \mbox{[}\textquotesingle{}aggregate\+Name\textquotesingle{}, \textquotesingle{}destination\+Property\textquotesingle{}, \textquotesingle{}event\+Source\+Property\textquotesingle{}, \textquotesingle{}aggregate\+Source\+Property\textquotesingle{}\mbox{]})
+\item 
+{\bfseries Chronos.\+Dependency.\+aggregate\+Name}
+\item 
+{\bfseries Chronos.\+Dependency.\+destination\+Property}
+\item 
+{\bfseries Chronos.\+Dependency.\+event\+Source\+Property}
+\item 
+{\bfseries Chronos.\+Dependency.\+aggregate\+Source\+Property}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Logic for handling synchronization dependencies between Chronos Aggregates. 
+
+The Aggregate\+Synchronization\+Manager is the entrypoint into dependency resolution. The logic defined in this module meant for use almost exclusive by the Chronos\+::\+Gateway module. 

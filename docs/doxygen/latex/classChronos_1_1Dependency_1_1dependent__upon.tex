@@ -1,0 +1,23 @@
+\hypertarget{classChronos_1_1Dependency_1_1dependent__upon}{}\section{Chronos.\+Dependency.\+dependent\+\_\+upon Class Reference}
+\label{classChronos_1_1Dependency_1_1dependent__upon}\index{Chronos.\+Dependency.\+dependent\+\_\+upon@{Chronos.\+Dependency.\+dependent\+\_\+upon}}
+
+
+An optional class decorator for use with \hyperlink{classChronos_1_1Core_1_1Event}{Chronos\+::\+Core\+::\+Event} subclasses specifying an external dependency on another Aggregate instance.  
+
+
+Inheritance diagram for Chronos.\+Dependency.\+dependent\+\_\+upon\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classChronos_1_1Dependency_1_1dependent__upon}
+\end{center}
+\end{figure}
+
+
+\subsection{Detailed Description}
+An optional class decorator for use with \hyperlink{classChronos_1_1Core_1_1Event}{Chronos\+::\+Core\+::\+Event} subclasses specifying an external dependency on another Aggregate instance. 
+
+Use of this decorator implies that instances of the decorated Event can only be processed after acquiring a lock on an external dependency. If the external dependency is unavailable (or cannot be resolved), then the Event will fail processing without attempting to execute its internal logic. 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Chronos/\hyperlink{Dependency_8py}{Dependency.\+py}\end{DoxyCompactItemize}

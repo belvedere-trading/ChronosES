@@ -1,0 +1,97 @@
+\hypertarget{classChronos_1_1Client_1_1ChronosClient}{}\section{Chronos.\+Client.\+Chronos\+Client Class Reference}
+\label{classChronos_1_1Client_1_1ChronosClient}\index{Chronos.\+Client.\+Chronos\+Client@{Chronos.\+Client.\+Chronos\+Client}}
+Inheritance diagram for Chronos.\+Client.\+Chronos\+Client\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classChronos_1_1Client_1_1ChronosClient}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def {\bfseries \+\_\+\+\_\+init\+\_\+\+\_\+} (self, aggregate\+Proto\+Class, callback=None, error\+Callback=None, management\+Callback=None, infrastructure\+Provider=None, kwargs)
+\item 
+def {\bfseries Connect} (self)
+\item 
+def {\bfseries Disconnect} (self)
+\item 
+def {\bfseries Dispose} (self)
+\item 
+def \hyperlink{group__Chronos_gae5a664ef1c7bf294b17376794264699f}{Type\+Of} (self, event\+Class)
+\begin{DoxyCompactList}\small\item\em Returns the stringified type of the provided event class. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga73356a0cabbb65e5ee84927e98e66b18}{Parse\+Aggregate} (self, aggregate\+Proto)
+\begin{DoxyCompactList}\small\item\em Parses the provided Aggregate\+Proto instance into an instance of Aggregate\+Response for easier client-\/side use. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gade70bdac06e41607144ef2a0fb7a3e36}{Parse\+Event\+Response} (self, event\+Proto)
+\begin{DoxyCompactList}\small\item\em Parses the provided Event\+Proto instance into an instance of Event\+Response for easier client-\/side use. \end{DoxyCompactList}\item 
+def {\bfseries Register} (self)
+\item 
+def \hyperlink{group__Chronos_ga6cae4fd381b0282b2aa5820b3d0f6266}{Check\+Status} (self)
+\begin{DoxyCompactList}\small\item\em Retrieves the Registration status of the client\textquotesingle{}s Aggregate from Chronos. \end{DoxyCompactList}\item 
+def {\bfseries Unregister} (self)
+\item 
+def {\bfseries Raise\+Event} (self, event, aggregate\+Id=0)
+\item 
+def {\bfseries Raise\+Event\+With\+Tag} (self, tag, event, aggregate\+Id=0, tag\+Expiration=0)
+\item 
+def {\bfseries Raise\+Transaction} (self, events)
+\item 
+def {\bfseries Subscribe} (self, indices)
+\item 
+def {\bfseries Unsubscribe} (self, indices)
+\item 
+def {\bfseries Unsubscribe\+All} (self)
+\item 
+def {\bfseries Get\+All\+Aggregates} (self)
+\item 
+def {\bfseries Get\+Aggregate\+By\+Id} (self, aggregate\+Id)
+\item 
+def {\bfseries Get\+Aggregates\+By\+Index} (self, kwargs)
+\item 
+def {\bfseries Get\+Aggregate\+By\+Tag} (self, aggregate\+Id, tag)
+\item 
+def {\bfseries Get\+All\+Tags} (self)
+\end{DoxyCompactItemize}
+\subsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def \hyperlink{group__Chronos_gafdce0107a1a368f4f4f7e7c9b084fc0c}{Parse\+Event} (event\+Class, event\+Proto)
+\begin{DoxyCompactList}\small\item\em Parses the provided Event\+Proto instance into an instance of the provided event protobuf entity. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+{\bfseries client\+Id}
+\item 
+{\bfseries aggregate\+Proto\+Class}
+\item 
+{\bfseries aggregate\+Name}
+\item 
+{\bfseries callback}
+\item 
+{\bfseries error\+Callback}
+\item 
+{\bfseries management\+Callback}
+\item 
+{\bfseries success\+Processor}
+\item 
+{\bfseries failure\+Processor}
+\item 
+{\bfseries management\+Processor}
+\item 
+{\bfseries subscription\+Manager}
+\item 
+{\bfseries service\+Proxy\+Manager}
+\item 
+{\bfseries client}
+\end{DoxyCompactItemize}
+\subsection*{Static Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+tuple {\bfseries Event\+Types} = ()
+\item 
+string {\bfseries Service\+Name} = \textquotesingle{}Chronos\textquotesingle{}
+\end{DoxyCompactItemize}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Chronos/Client.\+py\end{DoxyCompactItemize}

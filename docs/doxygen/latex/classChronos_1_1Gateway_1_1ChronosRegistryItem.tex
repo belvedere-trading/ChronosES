@@ -1,0 +1,45 @@
+\hypertarget{classChronos_1_1Gateway_1_1ChronosRegistryItem}{}\section{Chronos.\+Gateway.\+Chronos\+Registry\+Item Class Reference}
+\label{classChronos_1_1Gateway_1_1ChronosRegistryItem}\index{Chronos.\+Gateway.\+Chronos\+Registry\+Item@{Chronos.\+Gateway.\+Chronos\+Registry\+Item}}
+
+
+Associates a \hyperlink{classChronos_1_1Gateway_1_1ChronosProcessManager}{Chronos\+Process\+Manager} with its \hyperlink{classChronos_1_1Gateway_1_1ChronosProcess}{Chronos\+Process} instance.  
+
+
+Inheritance diagram for Chronos.\+Gateway.\+Chronos\+Registry\+Item\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classChronos_1_1Gateway_1_1ChronosRegistryItem}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def {\bfseries \+\_\+\+\_\+init\+\_\+\+\_\+} (self)
+\item 
+def \hyperlink{group__Chronos_gae4d942c14fef0cc2abfc8ff9ca08eb14}{Startup} (self, manager, process, module)
+\begin{DoxyCompactList}\small\item\em Starts the underlying \hyperlink{classChronos_1_1Gateway_1_1ChronosProcess}{Chronos\+Process}. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga4094a3f48d548f9ed8c53ce14b900142}{Shutdown} (self)
+\begin{DoxyCompactList}\small\item\em Shuts down both the underlying \hyperlink{classChronos_1_1Gateway_1_1ChronosProcess}{Chronos\+Process} and its manager. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+{\bfseries lock}
+\item 
+{\bfseries is\+Running}
+\item 
+{\bfseries manager}
+\item 
+{\bfseries process}
+\item 
+{\bfseries module}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Associates a \hyperlink{classChronos_1_1Gateway_1_1ChronosProcessManager}{Chronos\+Process\+Manager} with its \hyperlink{classChronos_1_1Gateway_1_1ChronosProcess}{Chronos\+Process} instance. 
+
+These items are retained by the \hyperlink{classChronos_1_1Gateway_1_1ChronosGateway}{Chronos\+Gateway} so that the gateway can be cleaned up in its entirety if necessary. 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Chronos/\hyperlink{Gateway_8py}{Gateway.\+py}\end{DoxyCompactItemize}

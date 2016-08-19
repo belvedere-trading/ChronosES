@@ -1,0 +1,80 @@
+\hypertarget{classChronos_1_1Processor_1_1BackgroundProcessor}{}\section{Chronos.\+Processor.\+Background\+Processor Class Reference}
+\label{classChronos_1_1Processor_1_1BackgroundProcessor}\index{Chronos.\+Processor.\+Background\+Processor@{Chronos.\+Processor.\+Background\+Processor}}
+
+
+Handles processing of parameterless functions/methods on a background thread.  
+
+
+Inheritance diagram for Chronos.\+Processor.\+Background\+Processor\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classChronos_1_1Processor_1_1BackgroundProcessor}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def \hyperlink{classChronos_1_1Processor_1_1BackgroundProcessor_a389ce21b4d81861bfe10824e79c62db2}{\+\_\+\+\_\+init\+\_\+\+\_\+} (self, target, trigger\+Period=10, sleep\+Period=.\+5)
+\item 
+def {\bfseries Start} (self)\hypertarget{classChronos_1_1Processor_1_1BackgroundProcessor_a11c2b828639d06508547273c0dd05ea4}{}\label{classChronos_1_1Processor_1_1BackgroundProcessor_a11c2b828639d06508547273c0dd05ea4}
+
+\item 
+def {\bfseries Stop} (self)\hypertarget{classChronos_1_1Processor_1_1BackgroundProcessor_aca69a0c374964bf984fcfa1df2d57e06}{}\label{classChronos_1_1Processor_1_1BackgroundProcessor_aca69a0c374964bf984fcfa1df2d57e06}
+
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+{\bfseries target}\hypertarget{classChronos_1_1Processor_1_1BackgroundProcessor_a71c47f37ada2a140348e351e5c398f39}{}\label{classChronos_1_1Processor_1_1BackgroundProcessor_a71c47f37ada2a140348e351e5c398f39}
+
+\item 
+{\bfseries trigger\+Period}\hypertarget{classChronos_1_1Processor_1_1BackgroundProcessor_ad9597ab7b62c54b60c09c9c4334fd6bf}{}\label{classChronos_1_1Processor_1_1BackgroundProcessor_ad9597ab7b62c54b60c09c9c4334fd6bf}
+
+\item 
+{\bfseries sleep\+Period}\hypertarget{classChronos_1_1Processor_1_1BackgroundProcessor_a5ce734d5ed9a211f3c2cce0da619d5a0}{}\label{classChronos_1_1Processor_1_1BackgroundProcessor_a5ce734d5ed9a211f3c2cce0da619d5a0}
+
+\item 
+{\bfseries time\+Provider}\hypertarget{classChronos_1_1Processor_1_1BackgroundProcessor_acc048c2bed98c4f8905f1fb0cdfd962d}{}\label{classChronos_1_1Processor_1_1BackgroundProcessor_acc048c2bed98c4f8905f1fb0cdfd962d}
+
+\item 
+{\bfseries thread}\hypertarget{classChronos_1_1Processor_1_1BackgroundProcessor_aae210d944a937d4588f7733974d5dc3f}{}\label{classChronos_1_1Processor_1_1BackgroundProcessor_aae210d944a937d4588f7733974d5dc3f}
+
+\item 
+{\bfseries is\+Running}\hypertarget{classChronos_1_1Processor_1_1BackgroundProcessor_a4f82884d8cc98c0839b110da7619f85d}{}\label{classChronos_1_1Processor_1_1BackgroundProcessor_a4f82884d8cc98c0839b110da7619f85d}
+
+\item 
+{\bfseries last\+Trigger\+Time}\hypertarget{classChronos_1_1Processor_1_1BackgroundProcessor_aade99aef56a7c6e30176228a921a446f}{}\label{classChronos_1_1Processor_1_1BackgroundProcessor_aade99aef56a7c6e30176228a921a446f}
+
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Handles processing of parameterless functions/methods on a background thread. 
+
+A single \hyperlink{classChronos_1_1Processor_1_1BackgroundProcessor}{Background\+Processor} instance can only be started and stopped a single time. 
+
+\subsection{Constructor \& Destructor Documentation}
+\index{Chronos\+::\+Processor\+::\+Background\+Processor@{Chronos\+::\+Processor\+::\+Background\+Processor}!\+\_\+\+\_\+init\+\_\+\+\_\+@{\+\_\+\+\_\+init\+\_\+\+\_\+}}
+\index{\+\_\+\+\_\+init\+\_\+\+\_\+@{\+\_\+\+\_\+init\+\_\+\+\_\+}!Chronos\+::\+Processor\+::\+Background\+Processor@{Chronos\+::\+Processor\+::\+Background\+Processor}}
+\subsubsection[{\texorpdfstring{\+\_\+\+\_\+init\+\_\+\+\_\+(self, target, trigger\+Period=10, sleep\+Period=.\+5)}{__init__(self, target, triggerPeriod=10, sleepPeriod=.5)}}]{\setlength{\rightskip}{0pt plus 5cm}def Chronos.\+Processor.\+Background\+Processor.\+\_\+\+\_\+init\+\_\+\+\_\+ (
+\begin{DoxyParamCaption}
+\item[{}]{self, }
+\item[{}]{target, }
+\item[{}]{trigger\+Period = {\ttfamily 10}, }
+\item[{}]{sleep\+Period = {\ttfamily .5}}
+\end{DoxyParamCaption}
+)}\hypertarget{classChronos_1_1Processor_1_1BackgroundProcessor_a389ce21b4d81861bfe10824e79c62db2}{}\label{classChronos_1_1Processor_1_1BackgroundProcessor_a389ce21b4d81861bfe10824e79c62db2}
+
+\begin{DoxyParams}{Parameters}
+{\em target} & the function/method to be invoked in the processing thread \\
+\hline
+{\em trigger\+Period} & the timeout (in seconds) specifying how often the target should be called \\
+\hline
+{\em sleep\+Period} & the timeout (in seconds) specifying how long the processor should sleep before checking its trigger\+Period \\
+\hline
+\end{DoxyParams}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Chronos/Processor.\+py\end{DoxyCompactItemize}

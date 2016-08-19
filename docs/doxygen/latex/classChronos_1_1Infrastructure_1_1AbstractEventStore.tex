@@ -1,0 +1,76 @@
+\hypertarget{classChronos_1_1Infrastructure_1_1AbstractEventStore}{}\section{Chronos.\+Infrastructure.\+Abstract\+Event\+Store Class Reference}
+\label{classChronos_1_1Infrastructure_1_1AbstractEventStore}\index{Chronos.\+Infrastructure.\+Abstract\+Event\+Store@{Chronos.\+Infrastructure.\+Abstract\+Event\+Store}}
+
+
+An abstract base class detailing the interface required for a Chronos\+ES persistence backend.  
+
+
+Inheritance diagram for Chronos.\+Infrastructure.\+Abstract\+Event\+Store\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classChronos_1_1Infrastructure_1_1AbstractEventStore}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def \hyperlink{group__Chronos_ga30a470bc6de0e6aaf468d9ba0abf53be}{\+\_\+\+\_\+init\+\_\+\+\_\+} (self, infrastructure\+Provider)
+\begin{DoxyCompactList}\small\item\em All \hyperlink{classChronos_1_1Infrastructure_1_1AbstractEventStore}{Abstract\+Event\+Store} subclass must implement an {\bfseries init} that at least satisfies this signature. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga865256d9e309eb64c77ba073ca53f6d0}{Key\+Generator} (self)
+\begin{DoxyCompactList}\small\item\em Returns the constructor for the \hyperlink{classChronos_1_1Infrastructure_1_1AbstractEventKeys}{Abstract\+Event\+Keys} subclass associated with a particular \hyperlink{classChronos_1_1Infrastructure_1_1AbstractEventStore}{Abstract\+Event\+Store} implementation. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga17c0011d29ca7707d5b790211327b586}{Dispose} (self)
+\begin{DoxyCompactList}\small\item\em Performs all necessary cleanup of remote resources. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga4a151ebe26b5a8046272920def464107}{Get\+Aggregate\+Id} (self, aggregate\+Class)
+\begin{DoxyCompactList}\small\item\em Returns the current (unused) aggregate\+Id for an Aggregate. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga00579d86cc3a3a7805b76a202046765b}{Get\+And\+Increment\+Aggregate\+Id} (self, aggregate\+Class)
+\begin{DoxyCompactList}\small\item\em Increments and returns the current aggregate\+Id for an Aggregate. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gab6a37c0b1d871a0304f4e89fe8e35317}{Persist\+Aggregate\+Logic} (self, aggregate\+Class, aggregate\+Logic)
+\begin{DoxyCompactList}\small\item\em Persists new Aggregate logic into the underlying data store and returns the new logic\+Id. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gaac3c8acece5840e33d6ea383f60c1114}{Get\+Latest\+Aggregate\+Logic} (self, aggregate\+Class)
+\begin{DoxyCompactList}\small\item\em Return the most recently registered version of an Aggregate\textquotesingle{}s logic/data model. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gab524764c52a48bd4b924d7518ba35f4c}{Get\+Latest\+Aggregate\+Logic\+By\+Name} (self, aggregate\+Name)
+\begin{DoxyCompactList}\small\item\em Return the most recently registered version of an Aggregate\textquotesingle{}s logic/data model. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gae000957aba7b70433c500fd97e0893e8}{Get\+Aggregate\+Logic} (self, aggregate\+Class, logic\+Ids)
+\begin{DoxyCompactList}\small\item\em Returns multiple versions of logic for an Aggregate. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gad7ca7261b0789dd61ca81a60ee414f94}{Persist\+Events} (self, aggregate\+Class, events)
+\begin{DoxyCompactList}\small\item\em Atomically persist Events to the underlying data store and notify subscribed clients of the modifications. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gaf08457efe1c1b5f45451547f543b2fd6}{Publish\+Management\+Notification} (self, aggregate\+Class, notification)
+\begin{DoxyCompactList}\small\item\em Publish a notification the subscribed clients that a management event has occured. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gaaf58520cf6503cad9967af939efca480}{Get\+Event\+Persistence\+Checkpoint} (self, aggregate\+Class)
+\begin{DoxyCompactList}\small\item\em Returns the current \hyperlink{classChronos_1_1Infrastructure_1_1EventPersistenceCheckpoint}{Event\+Persistence\+Checkpoint} for an Aggregate. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga33cde926e84482f515173ebec9852030}{Get\+Events\+To\+Version} (self, aggregate, to\+Version)
+\begin{DoxyCompactList}\small\item\em Returns Events for an Aggregate instance from a lower version to a higher one. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gae9298fb619df87b9181b881acde8f013}{Get\+Events\+By\+Timestamp\+Range} (self, aggregate, from\+Timestamp, to\+Timestamp)
+\begin{DoxyCompactList}\small\item\em Returns Events for an Aggregate instance from one point in time to another. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga8a92959c83ea59013f94648eac6ec94b}{Try\+Get\+Snapshot} (self, aggregate\+Class, aggregate\+Id)
+\begin{DoxyCompactList}\small\item\em Returns the latest snapshot of an Aggregate instance\textquotesingle{}s state. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga8209810feeee912e6fe62f6244f38802}{Get\+All\+Snapshots} (self, aggregate\+Class)
+\begin{DoxyCompactList}\small\item\em Returns the latest snapshot of all Aggregate instance states. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gabd09dd35ed768b611c4135612a878285}{Get\+Indexed\+Snapshots} (self, aggregate\+Class, aggregate\+Ids)
+\begin{DoxyCompactList}\small\item\em Returns the latest snapshot of a subset of Aggregate instance states. \end{DoxyCompactList}\item 
+def {\bfseries Get\+Tags} (self, aggregate\+Class)
+\item 
+def \hyperlink{group__Chronos_ga6e7bef46c596b6148c2afd64032c9cc7}{Get\+Tag} (self, aggregate\+Class, aggregate\+Id, tag)
+\begin{DoxyCompactList}\small\item\em Returns an Aggregate instance snapshot at a tagged point in time. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga8c99114f487e0549eefe4b754d06ffa0}{Get\+All\+Aggregate\+Names} (self)
+\begin{DoxyCompactList}\small\item\em Returns the names of all Aggregates that have ever registered with Chronos\+ES. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gab7cf7e29ee38e091d177b793abdc8b0c}{Subscribe} (self, prefix, channel, callback)
+\begin{DoxyCompactList}\small\item\em Subscribes to notifications for Event application updates. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga5d1257300d4e388a5061d8ffec6f1ff2}{Unsubscribe} (self, prefix, channel)
+\begin{DoxyCompactList}\small\item\em Unsubscribes to notifications for Event application updates. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+An abstract base class detailing the interface required for a Chronos\+ES persistence backend. 
+
+An event store implementation has two primary reponsibilities\+:
+\begin{DoxyEnumerate}
+\item Persistence of Aggregate snapshot/\+Event data
+\item Notification of processed Events/changes to Aggregate instance state.
+\end{DoxyEnumerate}
+
+The Chronos\+ES implementation places some constraints on certain methods of this class; these will be documented inline for each relevant method. 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Chronos/Infrastructure.\+py\end{DoxyCompactItemize}

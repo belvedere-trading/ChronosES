@@ -1,0 +1,45 @@
+\hypertarget{classChronos_1_1Core_1_1SqliteIndex}{}\section{Chronos.\+Core.\+Sqlite\+Index Class Reference}
+\label{classChronos_1_1Core_1_1SqliteIndex}\index{Chronos.\+Core.\+Sqlite\+Index@{Chronos.\+Core.\+Sqlite\+Index}}
+
+
+Abstracts away the details of the sqlite index implementation.  
+
+
+Inheritance diagram for Chronos.\+Core.\+Sqlite\+Index\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classChronos_1_1Core_1_1SqliteIndex}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def {\bfseries \+\_\+\+\_\+init\+\_\+\+\_\+} (self, sqlite\+Session)
+\item 
+def {\bfseries Begin} (self)
+\item 
+def {\bfseries Commit} (self)
+\item 
+def {\bfseries Rollback} (self)
+\item 
+def {\bfseries Close} (self)
+\item 
+def {\bfseries Add} (self, obj)
+\item 
+def {\bfseries Flush} (self)
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+{\bfseries sqlite\+Session}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Abstracts away the details of the sqlite index implementation. 
+
+This class mainly exists to provide the same transactional interface provided by \hyperlink{classChronos_1_1Core_1_1AggregateRepository}{Aggregate\+Repository} and \hyperlink{classChronos_1_1Core_1_1EventProcessor}{Event\+Processor}. 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Chronos/Core.\+py\end{DoxyCompactItemize}

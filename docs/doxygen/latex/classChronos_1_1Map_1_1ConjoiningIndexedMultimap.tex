@@ -1,0 +1,92 @@
+\hypertarget{classChronos_1_1Map_1_1ConjoiningIndexedMultimap}{}\section{Chronos.\+Map.\+Conjoining\+Indexed\+Multimap Class Reference}
+\label{classChronos_1_1Map_1_1ConjoiningIndexedMultimap}\index{Chronos.\+Map.\+Conjoining\+Indexed\+Multimap@{Chronos.\+Map.\+Conjoining\+Indexed\+Multimap}}
+
+
+A map that allows its values to be accessed by multiple (potentially shared) keys.  
+
+
+Inheritance diagram for Chronos.\+Map.\+Conjoining\+Indexed\+Multimap\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classChronos_1_1Map_1_1ConjoiningIndexedMultimap}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def \hyperlink{group__PyInfrastructure_gad33330f697b05ca2d3ecfc6b4e315306}{\+\_\+\+\_\+init\+\_\+\+\_\+} (self, value\+Type)
+\begin{DoxyCompactList}\small\item\em Creates an instance of \hyperlink{classChronos_1_1Map_1_1ConjoiningIndexedMultimap}{Conjoining\+Indexed\+Multimap} using the supplied value type to construct generated indices. \end{DoxyCompactList}\item 
+def {\bfseries \+\_\+\+\_\+setitem\+\_\+\+\_\+} (self, key, value)
+\item 
+def {\bfseries \+\_\+\+\_\+delitem\+\_\+\+\_\+} (self, key)
+\item 
+def \hyperlink{group__PyInfrastructure_gaf6acad2c10b1208a8f9a5f2d85de1865}{Get\+Intersection} (self, kwargs)
+\begin{DoxyCompactList}\small\item\em Returns the intersection of all lookups specified in the keyword arguments. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+{\bfseries value\+Type}
+\item 
+{\bfseries generation\+Functions}
+\item 
+{\bfseries indexed\+Views}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+A map that allows its values to be accessed by multiple (potentially shared) keys. 
+
+Values must be instances of the supplied value\+Type argument, which in turn must be a subclass of \hyperlink{classChronos_1_1Map_1_1MultimapValue}{Multimap\+Value}. In addition, the supplied value type must specify at least one index (through use of the index decorator).
+
+\hyperlink{classChronos_1_1Map_1_1ConjoiningIndexedMultimap}{Conjoining\+Indexed\+Multimap} requires that each inserted value has a unique key to identify it. As values are added to the map using the unique key, additional keys are generated using user-\/defined selectors. All values that shared a generated key will be returned when that generated key is accessed.
+
+When a value is removed from the map (once again, using its unique key), it will also be removed from all other mappings.
+
+Caveats\+:
+
+Values inserted into \hyperlink{classChronos_1_1Map_1_1ConjoiningIndexedMultimap}{Conjoining\+Indexed\+Multimap} should not override {\bfseries eq} or {\bfseries hash} to ensure that the generated lookup sets compare values based on their identities and not their values.
+
+The same value should never be inserted into \hyperlink{classChronos_1_1Map_1_1ConjoiningIndexedMultimap}{Conjoining\+Indexed\+Multimap} more than once; doing so will result in the eventual orphaning of that object in all generated lookup sets once that value is removed based on any one of its keys.
+
+If any of the generated keys return a simple iterable value (a value that has an {\bfseries iter} method), keys will be generated for each item within the iterable, rather than using the iterable itself. This behavior exists to allow for indexing on functions that return multiple values.
+
+\begin{DoxySeeAlso}{See also}
+index 
+
+\hyperlink{classChronos_1_1Map_1_1MultimapValue}{Multimap\+Value}
+\end{DoxySeeAlso}
+For example\+: 
+\begin{DoxyCode}
+1 \textcolor{keyword}{from} \hyperlink{namespaceChronos_1_1Map}{Chronos.Map} \textcolor{keyword}{import} ConjoiningIndexedMultimap, MultimapValue, index
+2 
+3 \textcolor{keyword}{class }TestUser(MultimapValue):
+4     \textcolor{keyword}{def }\_\_init\_\_(self, userId, whoAmI, whereAmI):
+5         self.userId = userId
+6         self.whoAmI = whoAmI
+7         self.whereAmI = whereAmI
+8 
+9     @index
+10     \textcolor{keyword}{def }WhoAmI(self):
+11         \textcolor{keywordflow}{return} self.whoAmI
+12 
+13     @index
+14     \textcolor{keyword}{def }WhereAmI(self):
+15         \textcolor{keywordflow}{return} self.whereAmI
+16 
+17 conMap = ConjoiningIndexedMultimap(valueType=TestUser)
+18 u1 = TestUser(1, \textcolor{stringliteral}{'jka'}, \textcolor{stringliteral}{'testclerk1'})
+19 u2 = TestUser(2, \textcolor{stringliteral}{'jka'}, \textcolor{stringliteral}{'readonly1'})
+20 u3 = TestUser(3, \textcolor{stringliteral}{'jme'}, \textcolor{stringliteral}{'testclerk1'})
+21 conMap[1] = u1
+22 conMap[2] = u2
+23 conMap[3] = u3
+24 
+25 conMap.WhoAmI(\textcolor{stringliteral}{'jme'}) == set([u3])
+26 conMap.WhereAmI(\textcolor{stringliteral}{'testclerk1'}) == set([u1, u3])
+27 conMap.WhoAmI(\textcolor{stringliteral}{'jka'}) == set([u1, u2])
+\end{DoxyCode}
+ 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Chronos/\hyperlink{Map_8py}{Map.\+py}\end{DoxyCompactItemize}

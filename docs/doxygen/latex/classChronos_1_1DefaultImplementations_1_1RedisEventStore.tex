@@ -1,0 +1,94 @@
+\hypertarget{classChronos_1_1DefaultImplementations_1_1RedisEventStore}{}\section{Chronos.\+Default\+Implementations.\+Redis\+Event\+Store Class Reference}
+\label{classChronos_1_1DefaultImplementations_1_1RedisEventStore}\index{Chronos.\+Default\+Implementations.\+Redis\+Event\+Store@{Chronos.\+Default\+Implementations.\+Redis\+Event\+Store}}
+
+
+An event store implementation using Redis as the backend for both event persistence and notification.  
+
+
+Inheritance diagram for Chronos.\+Default\+Implementations.\+Redis\+Event\+Store\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classChronos_1_1DefaultImplementations_1_1RedisEventStore}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def {\bfseries \+\_\+\+\_\+init\+\_\+\+\_\+} (self, infrastructure\+Provider, kwargs)
+\item 
+def {\bfseries Key\+Generator} (self)
+\item 
+def {\bfseries Dispose} (self)
+\item 
+def \hyperlink{group__Chronos_gacf07457d7fc86a6c7288d0776a232232}{Get\+Aggregate\+Id} (self, aggregate\+Class)
+\begin{DoxyCompactList}\small\item\em Returns the current aggregate\+Id for the supplied aggregate root. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gaf6e4ec22098eba3836bb08becb8040bd}{Get\+And\+Increment\+Aggregate\+Id} (self, aggregate\+Class)
+\begin{DoxyCompactList}\small\item\em Increments the current aggregate\+Id for the supplied aggregate root and returns the new value. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga631470897d4a55e95820e08484f71135}{Persist\+Aggregate\+Logic} (self, aggregate\+Class, aggregate\+Logic)
+\begin{DoxyCompactList}\small\item\em Persists the Aggregate\+Logic for the supplied aggregate root and updates the logic id for future use. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga651c31b6887827043503061a23dfdba7}{Get\+Latest\+Aggregate\+Logic} (self, aggregate\+Class)
+\begin{DoxyCompactList}\small\item\em Returns the latest version of Aggregate\+Logic for the supplied aggregate root. \end{DoxyCompactList}\item 
+def {\bfseries Get\+Latest\+Aggregate\+Logic\+By\+Name} (self, aggregate\+Name)
+\item 
+def \hyperlink{group__Chronos_ga99132bff35045acd67ea8d9bbc5f32c8}{Get\+Aggregate\+Logic} (self, aggregate\+Class, logic\+Ids)
+\begin{DoxyCompactList}\small\item\em Retrieves a dictionary of all aggregate logic that matches the provided logic ids. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gaa6e3ef31e155461d4739f78f557289dc}{Persist\+Events} (self, aggregate\+Class, events)
+\begin{DoxyCompactList}\small\item\em Persists all necessary information to the Redis backing store. \end{DoxyCompactList}\item 
+def {\bfseries Publish\+Management\+Notification} (self, aggregate\+Class, notification)
+\item 
+def \hyperlink{group__Chronos_gac49283b5aa4ff3905743e32a22a4d603}{Get\+Event\+Persistence\+Checkpoint} (self, aggregate\+Class)
+\begin{DoxyCompactList}\small\item\em Retrieves and deserializes the current Event\+Persistence\+Checkpoint from Redis. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga800945f4d3c67903a35524bebd8041e6}{Get\+Events\+To\+Version} (self, aggregate, to\+Version)
+\begin{DoxyCompactList}\small\item\em Retrieves all events for the supplied aggregate\textquotesingle{}s id with version greater than or equal to the supplied aggregate\textquotesingle{}s version and less than or equal to the supplied to\+Version. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gac6fb1dcb8045a9c9aeb5716f78dbff89}{Get\+Events\+By\+Timestamp\+Range} (self, aggregate, from\+Timestamp, to\+Timestamp)
+\begin{DoxyCompactList}\small\item\em Retrieves all events for the supplied aggregate\textquotesingle{}s id with processed\+Timestamp greater than or equal to the supplied from\+Timestamp and less than or equal to the supplied to\+Timestamp. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga36ff3627316ace7a057bbbc2afab72c6}{Try\+Get\+Snapshot} (self, aggregate\+Class, aggregate\+Id)
+\begin{DoxyCompactList}\small\item\em Attempts to retrieve and return the latest snapshot for the supplied aggregate\+Id. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gaff0db56eede5a1e7f18cf025e4fe11cd}{Get\+All\+Snapshots} (self, aggregate\+Class)
+\begin{DoxyCompactList}\small\item\em Retrieves all snapshots for the supplied aggregate root. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gaaffd95b785639b226c4358f443fb072d}{Get\+Indexed\+Snapshots} (self, aggregate\+Class, aggregate\+Ids)
+\begin{DoxyCompactList}\small\item\em Retrieves all aggregates for the supplied aggregate root that satisfy the provided index contraints. \end{DoxyCompactList}\item 
+def {\bfseries Get\+Tags} (self, aggregate\+Class)
+\item 
+def {\bfseries Get\+Tag} (self, aggregate\+Class, aggregate\+Id, tag)
+\item 
+def {\bfseries Get\+All\+Aggregate\+Names} (self)
+\item 
+def {\bfseries Exists} (self, aggregate\+Class, key)
+\item 
+def {\bfseries Num\+Events} (self, aggregate\+Class, aggregate\+Id)
+\item 
+def {\bfseries Get\+All\+Logic} (self, aggregate\+Class)
+\item 
+def {\bfseries Subscribe} (self, prefix, channel, callback)
+\item 
+def {\bfseries Unsubscribe} (self, prefix, channel)
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+{\bfseries subscription}
+\item 
+{\bfseries processing\+Thread}
+\item 
+{\bfseries lock}
+\item 
+{\bfseries redis}
+\end{DoxyCompactItemize}
+\subsection*{Static Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+string {\bfseries Configuration\+Section\+Name} = \textquotesingle{}Default\+Redis\+Implementation\textquotesingle{}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+An event store implementation using Redis as the backend for both event persistence and notification. 
+
+Each aggregate has its latest state saved to the backing store every time an update occurs, and each event persistence is accompanied by a corresponding event notification.
+
+Event persistence atomicity is ensured with M\+U\+L\+T\+I/\+E\+X\+EC transactions, while index atomicity is ensured through Lua scripts. 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Chronos/Default\+Implementations.\+py\end{DoxyCompactItemize}

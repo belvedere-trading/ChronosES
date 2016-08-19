@@ -1,0 +1,345 @@
+\hypertarget{group__PyInfrastructure}{}\section{Py\+Infrastructure}
+\label{group__PyInfrastructure}\index{Py\+Infrastructure@{Py\+Infrastructure}}
+
+
+\{  
+
+
+\subsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classChronos_1_1EventLogger_1_1EventLoggerException}{Chronos.\+Event\+Logger.\+Event\+Logger\+Exception}
+\begin{DoxyCompactList}\small\item\em Singular exception to be thrown from \hyperlink{classChronos_1_1EventLogger_1_1EventLogger}{Event\+Logger} functions. \end{DoxyCompactList}\item 
+class \hyperlink{classChronos_1_1EventLogger_1_1LoggerLevel}{Chronos.\+Event\+Logger.\+Logger\+Level}
+\begin{DoxyCompactList}\small\item\em Level wrapper to prevent users from having to import logging. \end{DoxyCompactList}\item 
+class \hyperlink{classChronos_1_1EventLogger_1_1BTFileHandler}{Chronos.\+Event\+Logger.\+B\+T\+File\+Handler}
+\begin{DoxyCompactList}\small\item\em File\+Handler wrapper to prevent users from having to import logging. \end{DoxyCompactList}\item 
+class \hyperlink{classChronos_1_1EventLogger_1_1BTStreamHandler}{Chronos.\+Event\+Logger.\+B\+T\+Stream\+Handler}
+\begin{DoxyCompactList}\small\item\em Stream\+Handler wrapper to prevent users from having to import logging. \end{DoxyCompactList}\item 
+class \hyperlink{classChronos_1_1EventLogger_1_1BTNullHandler}{Chronos.\+Event\+Logger.\+B\+T\+Null\+Handler}
+\begin{DoxyCompactList}\small\item\em Null\+Handler wrapper to prevent users from having to import logging. \end{DoxyCompactList}\item 
+class \hyperlink{classChronos_1_1EventLogger_1_1PreciseTimeLoggingFormatter}{Chronos.\+Event\+Logger.\+Precise\+Time\+Logging\+Formatter}
+\item 
+class \hyperlink{classChronos_1_1EventLogger_1_1PersistentLoggerSettings}{Chronos.\+Event\+Logger.\+Persistent\+Logger\+Settings}
+\begin{DoxyCompactList}\small\item\em Settings that will be applied to every log written by the \hyperlink{classChronos_1_1EventLogger_1_1EventLogger}{Event\+Logger} once it\textquotesingle{}s initialized. \end{DoxyCompactList}\item 
+class \hyperlink{classChronos_1_1EventLogger_1_1UnitializedEventLogger}{Chronos.\+Event\+Logger.\+Unitialized\+Event\+Logger}
+\item 
+class \hyperlink{classChronos_1_1EventLogger_1_1EventLogger}{Chronos.\+Event\+Logger.\+Event\+Logger}
+\begin{DoxyCompactList}\small\item\em Handles logging of events that should be consumed by Splunk. \end{DoxyCompactList}\item 
+class \hyperlink{classChronos_1_1Map_1_1MultimapValueMeta}{Chronos.\+Map.\+Multimap\+Value\+Meta}
+\begin{DoxyCompactList}\small\item\em A simple metaclass that tags indexing functions on \hyperlink{classChronos_1_1Map_1_1MultimapValue}{Multimap\+Value} instances for use by \hyperlink{classChronos_1_1Map_1_1ConjoiningIndexedMultimap}{Conjoining\+Indexed\+Multimap}. \end{DoxyCompactList}\item 
+class \hyperlink{classChronos_1_1Map_1_1MultimapValue}{Chronos.\+Map.\+Multimap\+Value}
+\begin{DoxyCompactList}\small\item\em A thin base class that uses the \hyperlink{classChronos_1_1Map_1_1MultimapValueMeta}{Multimap\+Value\+Meta} metaclass. \end{DoxyCompactList}\item 
+class \hyperlink{classChronos_1_1Map_1_1ConjoiningIndexedMultimap}{Chronos.\+Map.\+Conjoining\+Indexed\+Multimap}
+\begin{DoxyCompactList}\small\item\em A map that allows its values to be accessed by multiple (potentially shared) keys. \end{DoxyCompactList}\item 
+class \hyperlink{classChronos_1_1Map_1_1LRUEvictingMap}{Chronos.\+Map.\+L\+R\+U\+Evicting\+Map}
+\begin{DoxyCompactList}\small\item\em A dictionary that maintains a predefined maximum capacity. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+B\+T\+File\+Handler.\+\_\+\+\_\+init\+\_\+\+\_\+} (self, filename, mode=\textquotesingle{}a\textquotesingle{}, encoding=None, delay=False)\hypertarget{group__PyInfrastructure_ga4728151ae2d279803ded69ee9ff10a0a}{}\label{group__PyInfrastructure_ga4728151ae2d279803ded69ee9ff10a0a}
+
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+B\+T\+File\+Handler.\+Create\+Path} (path)\hypertarget{group__PyInfrastructure_ga67bb768f5c8b83697a8c3b86d4957e74}{}\label{group__PyInfrastructure_ga67bb768f5c8b83697a8c3b86d4957e74}
+
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+B\+T\+Stream\+Handler.\+\_\+\+\_\+init\+\_\+\+\_\+} (self, stream=None)\hypertarget{group__PyInfrastructure_ga9bb7c7ae075214c894de22949e5800c8}{}\label{group__PyInfrastructure_ga9bb7c7ae075214c894de22949e5800c8}
+
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+B\+T\+Null\+Handler.\+emit} (self, record)\hypertarget{group__PyInfrastructure_ga7fbc9008dbf687809ad7a274069536c1}{}\label{group__PyInfrastructure_ga7fbc9008dbf687809ad7a274069536c1}
+
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+Precise\+Time\+Logging\+Formatter.\+format\+Time} (self, record, datefmt=None)\hypertarget{group__PyInfrastructure_ga6da4d879e87ab927a0d39aec5024cf2e}{}\label{group__PyInfrastructure_ga6da4d879e87ab927a0d39aec5024cf2e}
+
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+Persistent\+Logger\+Settings.\+\_\+\+\_\+init\+\_\+\+\_\+} (self, level=Logger\+Level.\+Info, tags=None, log\+Format=\textquotesingle{}\%(asctime) s U\+TC;\%(message) s\textquotesingle{}, date\+Format=None)\hypertarget{group__PyInfrastructure_ga486a44233539370fc15260c1e283c7f9}{}\label{group__PyInfrastructure_ga486a44233539370fc15260c1e283c7f9}
+
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+Persistent\+Logger\+Settings.\+Add\+Tag} (self, key, value)\hypertarget{group__PyInfrastructure_ga4ffa5852c239b0213bc19b39aa094da3}{}\label{group__PyInfrastructure_ga4ffa5852c239b0213bc19b39aa094da3}
+
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+Persistent\+Logger\+Settings.\+Pop\+Tag} (self, key)\hypertarget{group__PyInfrastructure_gacc2b8b76bf11f2a6562f130c57e7edc1}{}\label{group__PyInfrastructure_gacc2b8b76bf11f2a6562f130c57e7edc1}
+
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+Persistent\+Logger\+Settings.\+Get\+Formatter} (self)\hypertarget{group__PyInfrastructure_ga8f5dbbec7325d545cc8282a06ccdad63}{}\label{group__PyInfrastructure_ga8f5dbbec7325d545cc8282a06ccdad63}
+
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+Generate\+Run\+Id} ()\hypertarget{group__PyInfrastructure_ga1a49c3d343ba63edd8c4872134b0a5cf}{}\label{group__PyInfrastructure_ga1a49c3d343ba63edd8c4872134b0a5cf}
+
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+Get\+Log\+File\+Path} (firm=None, info\+Sys=None, who\+AmI=None, where\+AmI=None, application=None, directory=None)\hypertarget{group__PyInfrastructure_gab09d0208eca6abef6b23e9a6be5172b8}{}\label{group__PyInfrastructure_gab09d0208eca6abef6b23e9a6be5172b8}
+
+\item 
+def \hyperlink{group__PyInfrastructure_ga909b4948081a7832e704215ec484dea4}{Chronos.\+Event\+Logger.\+Event\+Logger.\+\_\+\+\_\+init\+\_\+\+\_\+} (self, application, log\+File\+Path, firm, info\+Sys, who\+AmI, where\+AmI, settings, handlers)
+\begin{DoxyCompactList}\small\item\em This constructor should only be called by an initialization function. \end{DoxyCompactList}\item 
+def {\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+Set\+Handlers} (self, handlers)\hypertarget{group__PyInfrastructure_ga1e45b5a3753d501d90716426508de640}{}\label{group__PyInfrastructure_ga1e45b5a3753d501d90716426508de640}
+
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+Reset\+Handlers} (self)\hypertarget{group__PyInfrastructure_ga4bf5a78272965e5ac6336b8216f16c3c}{}\label{group__PyInfrastructure_ga4bf5a78272965e5ac6336b8216f16c3c}
+
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+Set\+Level} (self, level)\hypertarget{group__PyInfrastructure_ga1fec6a50d11c9494bbcee4849c85f689}{}\label{group__PyInfrastructure_ga1fec6a50d11c9494bbcee4849c85f689}
+
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+Initialize\+Logger} (firm=None, info\+Sys=None, who\+AmI=None, where\+AmI=None, application=None, directory=None, settings=Persistent\+Logger\+Settings(), handler=None)\hypertarget{group__PyInfrastructure_ga8c653e6aed9184932cfe7ec54d9b58bf}{}\label{group__PyInfrastructure_ga8c653e6aed9184932cfe7ec54d9b58bf}
+
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+Deinitialize\+Logger} ()\hypertarget{group__PyInfrastructure_ga17e490fb14d28dbb5a0cff013d21bff0}{}\label{group__PyInfrastructure_ga17e490fb14d28dbb5a0cff013d21bff0}
+
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+Set\+Global\+Level} (level)\hypertarget{group__PyInfrastructure_ga987290fa23df3c8515130cacb6d2fdc5}{}\label{group__PyInfrastructure_ga987290fa23df3c8515130cacb6d2fdc5}
+
+\item 
+def \hyperlink{group__PyInfrastructure_ga22b169d02d02c1c7db9de09d26cf1319}{Chronos.\+Event\+Logger.\+Event\+Logger.\+Get\+Logger} ()
+\begin{DoxyCompactList}\small\item\em Gets the current \hyperlink{classChronos_1_1EventLogger_1_1EventLogger}{Event\+Logger} object. \end{DoxyCompactList}\item 
+def {\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+Log\+Critical} (component, module, function, title, reason=None, tags=None)\hypertarget{group__PyInfrastructure_ga55a421e365620d9159fbbc17e74e90f0}{}\label{group__PyInfrastructure_ga55a421e365620d9159fbbc17e74e90f0}
+
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+Log\+Error} (component, module, function, title, reason=None, tags=None)\hypertarget{group__PyInfrastructure_ga17a7ff2eacb6281c27b6243d35e08d4d}{}\label{group__PyInfrastructure_ga17a7ff2eacb6281c27b6243d35e08d4d}
+
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+Log\+Warning} (component, module, function, title, reason=None, tags=None)\hypertarget{group__PyInfrastructure_gac32f037d52276ada19bf2f36da282dff}{}\label{group__PyInfrastructure_gac32f037d52276ada19bf2f36da282dff}
+
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+Log\+Information} (component, module, function, title, reason=None, tags=None)\hypertarget{group__PyInfrastructure_ga7029459dd9177ebc0ebdb36f1a82ca35}{}\label{group__PyInfrastructure_ga7029459dd9177ebc0ebdb36f1a82ca35}
+
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+Log\+Debug} (component, module, function, title, reason=None, tags=None)\hypertarget{group__PyInfrastructure_ga71b44589d3646e2a363b08e21742e631}{}\label{group__PyInfrastructure_ga71b44589d3646e2a363b08e21742e631}
+
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+Log\+Exception} (component, module, function, title=None, reason=None, tags=None)\hypertarget{group__PyInfrastructure_ga7e520c8098d32b57ac85643035e26cec}{}\label{group__PyInfrastructure_ga7e520c8098d32b57ac85643035e26cec}
+
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+Log\+Critical\+Auto} (obj, title, reason=None, tags=None)\hypertarget{group__PyInfrastructure_ga09e4c587754a4d81a3022c866ec0d3fb}{}\label{group__PyInfrastructure_ga09e4c587754a4d81a3022c866ec0d3fb}
+
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+Log\+Error\+Auto} (obj, title, reason=None, tags=None)\hypertarget{group__PyInfrastructure_gaeaa9858da6229a4edb0b1696b5d27d55}{}\label{group__PyInfrastructure_gaeaa9858da6229a4edb0b1696b5d27d55}
+
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+Log\+Warning\+Auto} (obj, title, reason=None, tags=None)\hypertarget{group__PyInfrastructure_ga676566b77ed20124ae244f8b01fcbf39}{}\label{group__PyInfrastructure_ga676566b77ed20124ae244f8b01fcbf39}
+
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+Log\+Information\+Auto} (obj, title, reason=None, tags=None)\hypertarget{group__PyInfrastructure_ga17dc0827d49cf3722999949a125cde9f}{}\label{group__PyInfrastructure_ga17dc0827d49cf3722999949a125cde9f}
+
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+Log\+Debug\+Auto} (obj, title, reason=None, tags=None)\hypertarget{group__PyInfrastructure_ga2499bad064c7b178489b5cef63d4739c}{}\label{group__PyInfrastructure_ga2499bad064c7b178489b5cef63d4739c}
+
+\item 
+def {\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+Log\+Exception\+Auto} (obj, title=None, reason=None, tags=None)\hypertarget{group__PyInfrastructure_gaf3a8f92b8b42c7ab531794d107fd82ac}{}\label{group__PyInfrastructure_gaf3a8f92b8b42c7ab531794d107fd82ac}
+
+\item 
+def {\bfseries Chronos.\+Map.\+Multimap\+Value\+Meta.\+\_\+\+\_\+new\+\_\+\+\_\+} (mcs, name, bases, namespace, \+\_\+)\hypertarget{group__PyInfrastructure_ga363105a2832e5cd3e416e58bcc572c50}{}\label{group__PyInfrastructure_ga363105a2832e5cd3e416e58bcc572c50}
+
+\item 
+def \hyperlink{group__PyInfrastructure_ga9f969afc54b404a47d37bdf6d5060f10}{Chronos.\+Map.\+index} (func)
+\begin{DoxyCompactList}\small\item\em A method decorator that tags the associated method for indexing by \hyperlink{classChronos_1_1Map_1_1ConjoiningIndexedMultimap}{Conjoining\+Indexed\+Multimap}. \end{DoxyCompactList}\item 
+def \hyperlink{group__PyInfrastructure_gad33330f697b05ca2d3ecfc6b4e315306}{Chronos.\+Map.\+Conjoining\+Indexed\+Multimap.\+\_\+\+\_\+init\+\_\+\+\_\+} (self, value\+Type)
+\begin{DoxyCompactList}\small\item\em Creates an instance of \hyperlink{classChronos_1_1Map_1_1ConjoiningIndexedMultimap}{Conjoining\+Indexed\+Multimap} using the supplied value type to construct generated indices. \end{DoxyCompactList}\item 
+def {\bfseries Chronos.\+Map.\+Conjoining\+Indexed\+Multimap.\+\_\+\+\_\+setitem\+\_\+\+\_\+} (self, key, value)\hypertarget{group__PyInfrastructure_ga6fdae277ecc12980168a375638960755}{}\label{group__PyInfrastructure_ga6fdae277ecc12980168a375638960755}
+
+\item 
+def {\bfseries Chronos.\+Map.\+Conjoining\+Indexed\+Multimap.\+\_\+\+\_\+delitem\+\_\+\+\_\+} (self, key)\hypertarget{group__PyInfrastructure_ga7445ea5dd6ddbc68bdd15c1a10490029}{}\label{group__PyInfrastructure_ga7445ea5dd6ddbc68bdd15c1a10490029}
+
+\item 
+def \hyperlink{group__PyInfrastructure_gaf6acad2c10b1208a8f9a5f2d85de1865}{Chronos.\+Map.\+Conjoining\+Indexed\+Multimap.\+Get\+Intersection} (self, kwargs)
+\begin{DoxyCompactList}\small\item\em Returns the intersection of all lookups specified in the keyword arguments. \end{DoxyCompactList}\item 
+def \hyperlink{group__PyInfrastructure_ga792e630c1a4c608f22ccbc4f784b710e}{Chronos.\+Map.\+L\+R\+U\+Evicting\+Map.\+\_\+\+\_\+init\+\_\+\+\_\+} (self, capacity=1000)
+\begin{DoxyCompactList}\small\item\em Create an instance of the dictionary with the specified maximum capacity. \end{DoxyCompactList}\item 
+def {\bfseries Chronos.\+Map.\+L\+R\+U\+Evicting\+Map.\+\_\+\+\_\+setitem\+\_\+\+\_\+} (self, key, value)\hypertarget{group__PyInfrastructure_ga203c431d41a56ae5ab1aa6f310bedfa3}{}\label{group__PyInfrastructure_ga203c431d41a56ae5ab1aa6f310bedfa3}
+
+\item 
+def {\bfseries Chronos.\+Map.\+L\+R\+U\+Evicting\+Map.\+\_\+\+\_\+getitem\+\_\+\+\_\+} (self, key)\hypertarget{group__PyInfrastructure_gad19253ff484c623062819eead33bace8}{}\label{group__PyInfrastructure_gad19253ff484c623062819eead33bace8}
+
+\item 
+def {\bfseries Chronos.\+Map.\+L\+R\+U\+Evicting\+Map.\+\_\+\+\_\+delitem\+\_\+\+\_\+} (self, key)\hypertarget{group__PyInfrastructure_ga65fd86a109a102fab9b04c81f1041c0a}{}\label{group__PyInfrastructure_ga65fd86a109a102fab9b04c81f1041c0a}
+
+\item 
+def {\bfseries Chronos.\+Map.\+L\+R\+U\+Evicting\+Map.\+keys} (self)\hypertarget{group__PyInfrastructure_ga3e6ebc3dcbc940b7d0d5780af35faf94}{}\label{group__PyInfrastructure_ga3e6ebc3dcbc940b7d0d5780af35faf94}
+
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+{\bfseries Chronos.\+Event\+Logger.\+Logger\+Level.\+Critical} = logging.\+C\+R\+I\+T\+I\+C\+AL\hypertarget{group__PyInfrastructure_gae6d569d81b279e6ac6cec54b602b5e0d}{}\label{group__PyInfrastructure_gae6d569d81b279e6ac6cec54b602b5e0d}
+
+\item 
+{\bfseries Chronos.\+Event\+Logger.\+Logger\+Level.\+Error} = logging.\+E\+R\+R\+OR\hypertarget{group__PyInfrastructure_ga8151d2472b98c9f17354e83cb825aad2}{}\label{group__PyInfrastructure_ga8151d2472b98c9f17354e83cb825aad2}
+
+\item 
+{\bfseries Chronos.\+Event\+Logger.\+Logger\+Level.\+Warn} = logging.\+W\+A\+RN\hypertarget{group__PyInfrastructure_ga5695cfcf2f86c985a4cfb3936137bbac}{}\label{group__PyInfrastructure_ga5695cfcf2f86c985a4cfb3936137bbac}
+
+\item 
+{\bfseries Chronos.\+Event\+Logger.\+Logger\+Level.\+Info} = logging.\+I\+N\+FO\hypertarget{group__PyInfrastructure_ga09d7204f03066311de1218a1755baf53}{}\label{group__PyInfrastructure_ga09d7204f03066311de1218a1755baf53}
+
+\item 
+{\bfseries Chronos.\+Event\+Logger.\+Logger\+Level.\+Debug} = logging.\+D\+E\+B\+UG\hypertarget{group__PyInfrastructure_gabb563848ee0b3064c88f114a51cc8e4c}{}\label{group__PyInfrastructure_gabb563848ee0b3064c88f114a51cc8e4c}
+
+\item 
+{\bfseries Chronos.\+Event\+Logger.\+Logger\+Level.\+Not\+Set} = logging.\+N\+O\+T\+S\+ET\hypertarget{group__PyInfrastructure_gab2458ccae48db35c043500c9c1293d8d}{}\label{group__PyInfrastructure_gab2458ccae48db35c043500c9c1293d8d}
+
+\item 
+{\bfseries Chronos.\+Event\+Logger.\+Persistent\+Logger\+Settings.\+level}\hypertarget{group__PyInfrastructure_ga1dc41e4cb1448dfbb5a8127b718544e2}{}\label{group__PyInfrastructure_ga1dc41e4cb1448dfbb5a8127b718544e2}
+
+\item 
+{\bfseries Chronos.\+Event\+Logger.\+Persistent\+Logger\+Settings.\+tags}\hypertarget{group__PyInfrastructure_gaee0adf657d8c09a565599d01fb6b3889}{}\label{group__PyInfrastructure_gaee0adf657d8c09a565599d01fb6b3889}
+
+\item 
+{\bfseries Chronos.\+Event\+Logger.\+Persistent\+Logger\+Settings.\+log\+Format}\hypertarget{group__PyInfrastructure_ga8e3b5f5494b9452ee811dd5710d01465}{}\label{group__PyInfrastructure_ga8e3b5f5494b9452ee811dd5710d01465}
+
+\item 
+{\bfseries Chronos.\+Event\+Logger.\+Persistent\+Logger\+Settings.\+date\+Format}\hypertarget{group__PyInfrastructure_gaa37223293758e1a7b41d8efb8935eaca}{}\label{group__PyInfrastructure_gaa37223293758e1a7b41d8efb8935eaca}
+
+\item 
+bool {\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+Initialized} = False\hypertarget{group__PyInfrastructure_ga799afad57238767f86b217fb7abc7c7c}{}\label{group__PyInfrastructure_ga799afad57238767f86b217fb7abc7c7c}
+
+\item 
+{\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+Logger} = None\hypertarget{group__PyInfrastructure_ga35f2c5852654f9566d66b52903755be7}{}\label{group__PyInfrastructure_ga35f2c5852654f9566d66b52903755be7}
+
+\item 
+{\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+application}\hypertarget{group__PyInfrastructure_ga511f2392fed7e662cff052dbd623ca49}{}\label{group__PyInfrastructure_ga511f2392fed7e662cff052dbd623ca49}
+
+\item 
+{\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+log\+File\+Path}\hypertarget{group__PyInfrastructure_ga4def1c06d633cc7a5c5a562f62ddd0e1}{}\label{group__PyInfrastructure_ga4def1c06d633cc7a5c5a562f62ddd0e1}
+
+\item 
+{\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+firm}\hypertarget{group__PyInfrastructure_ga42c5cbd5244408b243b9d7bc3344d2e0}{}\label{group__PyInfrastructure_ga42c5cbd5244408b243b9d7bc3344d2e0}
+
+\item 
+{\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+info\+Sys}\hypertarget{group__PyInfrastructure_ga962e141215421253fd4a4d6064d197fa}{}\label{group__PyInfrastructure_ga962e141215421253fd4a4d6064d197fa}
+
+\item 
+{\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+who\+AmI}\hypertarget{group__PyInfrastructure_ga8c7409f9ec7c92dec481861e887d3393}{}\label{group__PyInfrastructure_ga8c7409f9ec7c92dec481861e887d3393}
+
+\item 
+{\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+where\+AmI}\hypertarget{group__PyInfrastructure_ga7b98e31a4119fca79b52be5af2534f36}{}\label{group__PyInfrastructure_ga7b98e31a4119fca79b52be5af2534f36}
+
+\item 
+{\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+settings}\hypertarget{group__PyInfrastructure_ga38e24822df9b8496d0f715391d0eca46}{}\label{group__PyInfrastructure_ga38e24822df9b8496d0f715391d0eca46}
+
+\item 
+{\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+handlers}\hypertarget{group__PyInfrastructure_ga7d5e80eae53718ac65d2d8bb90166608}{}\label{group__PyInfrastructure_ga7d5e80eae53718ac65d2d8bb90166608}
+
+\item 
+{\bfseries Chronos.\+Event\+Logger.\+Event\+Logger.\+logger}\hypertarget{group__PyInfrastructure_ga4024613bc29c2649838aa32760d80b87}{}\label{group__PyInfrastructure_ga4024613bc29c2649838aa32760d80b87}
+
+\item 
+{\bfseries Chronos.\+Map.\+Conjoining\+Indexed\+Multimap.\+value\+Type}\hypertarget{group__PyInfrastructure_gae373bef5dd750a52e1f6c42314e927d1}{}\label{group__PyInfrastructure_gae373bef5dd750a52e1f6c42314e927d1}
+
+\item 
+{\bfseries Chronos.\+Map.\+Conjoining\+Indexed\+Multimap.\+generation\+Functions}\hypertarget{group__PyInfrastructure_ga2bac442b72b9d447156c8f6d87338cc0}{}\label{group__PyInfrastructure_ga2bac442b72b9d447156c8f6d87338cc0}
+
+\item 
+{\bfseries Chronos.\+Map.\+Conjoining\+Indexed\+Multimap.\+indexed\+Views}\hypertarget{group__PyInfrastructure_ga4563386ee670843138908b870e9b0fdd}{}\label{group__PyInfrastructure_ga4563386ee670843138908b870e9b0fdd}
+
+\item 
+{\bfseries Chronos.\+Map.\+L\+R\+U\+Evicting\+Map.\+capacity}\hypertarget{group__PyInfrastructure_ga7a5b2a3c19e9d39321d79e41667a5b21}{}\label{group__PyInfrastructure_ga7a5b2a3c19e9d39321d79e41667a5b21}
+
+\item 
+{\bfseries Chronos.\+Map.\+L\+R\+U\+Evicting\+Map.\+cache}\hypertarget{group__PyInfrastructure_ga0eb8363637dae0339e86fd0404ba8508}{}\label{group__PyInfrastructure_ga0eb8363637dae0339e86fd0404ba8508}
+
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+\{ 
+
+
+
+\subsection{Function Documentation}
+\index{Py\+Infrastructure@{Py\+Infrastructure}!\+\_\+\+\_\+init\+\_\+\+\_\+@{\+\_\+\+\_\+init\+\_\+\+\_\+}}
+\index{\+\_\+\+\_\+init\+\_\+\+\_\+@{\+\_\+\+\_\+init\+\_\+\+\_\+}!Py\+Infrastructure@{Py\+Infrastructure}}
+\subsubsection[{\texorpdfstring{\+\_\+\+\_\+init\+\_\+\+\_\+(self, value\+Type)}{__init__(self, valueType)}}]{\setlength{\rightskip}{0pt plus 5cm}def Chronos.\+Map.\+Conjoining\+Indexed\+Multimap.\+\_\+\+\_\+init\+\_\+\+\_\+ (
+\begin{DoxyParamCaption}
+\item[{}]{self, }
+\item[{}]{value\+Type}
+\end{DoxyParamCaption}
+)}\hypertarget{group__PyInfrastructure_gad33330f697b05ca2d3ecfc6b4e315306}{}\label{group__PyInfrastructure_gad33330f697b05ca2d3ecfc6b4e315306}
+
+
+Creates an instance of \hyperlink{classChronos_1_1Map_1_1ConjoiningIndexedMultimap}{Conjoining\+Indexed\+Multimap} using the supplied value type to construct generated indices. 
+
+\index{Py\+Infrastructure@{Py\+Infrastructure}!\+\_\+\+\_\+init\+\_\+\+\_\+@{\+\_\+\+\_\+init\+\_\+\+\_\+}}
+\index{\+\_\+\+\_\+init\+\_\+\+\_\+@{\+\_\+\+\_\+init\+\_\+\+\_\+}!Py\+Infrastructure@{Py\+Infrastructure}}
+\subsubsection[{\texorpdfstring{\+\_\+\+\_\+init\+\_\+\+\_\+(self, application, log\+File\+Path, firm, info\+Sys, who\+Am\+I, where\+Am\+I, settings, handlers)}{__init__(self, application, logFilePath, firm, infoSys, whoAmI, whereAmI, settings, handlers)}}]{\setlength{\rightskip}{0pt plus 5cm}def Chronos.\+Event\+Logger.\+Event\+Logger.\+\_\+\+\_\+init\+\_\+\+\_\+ (
+\begin{DoxyParamCaption}
+\item[{}]{self, }
+\item[{}]{application, }
+\item[{}]{log\+File\+Path, }
+\item[{}]{firm, }
+\item[{}]{info\+Sys, }
+\item[{}]{who\+AmI, }
+\item[{}]{where\+AmI, }
+\item[{}]{settings, }
+\item[{}]{handlers}
+\end{DoxyParamCaption}
+)}\hypertarget{group__PyInfrastructure_ga909b4948081a7832e704215ec484dea4}{}\label{group__PyInfrastructure_ga909b4948081a7832e704215ec484dea4}
+
+
+This constructor should only be called by an initialization function. 
+
+Do not attempt to create your own instance of \hyperlink{classChronos_1_1EventLogger_1_1EventLogger}{Event\+Logger}. \index{Py\+Infrastructure@{Py\+Infrastructure}!\+\_\+\+\_\+init\+\_\+\+\_\+@{\+\_\+\+\_\+init\+\_\+\+\_\+}}
+\index{\+\_\+\+\_\+init\+\_\+\+\_\+@{\+\_\+\+\_\+init\+\_\+\+\_\+}!Py\+Infrastructure@{Py\+Infrastructure}}
+\subsubsection[{\texorpdfstring{\+\_\+\+\_\+init\+\_\+\+\_\+(self, capacity=1000)}{__init__(self, capacity=1000)}}]{\setlength{\rightskip}{0pt plus 5cm}def Chronos.\+Map.\+L\+R\+U\+Evicting\+Map.\+\_\+\+\_\+init\+\_\+\+\_\+ (
+\begin{DoxyParamCaption}
+\item[{}]{self, }
+\item[{}]{capacity = {\ttfamily 1000}}
+\end{DoxyParamCaption}
+)}\hypertarget{group__PyInfrastructure_ga792e630c1a4c608f22ccbc4f784b710e}{}\label{group__PyInfrastructure_ga792e630c1a4c608f22ccbc4f784b710e}
+
+
+Create an instance of the dictionary with the specified maximum capacity. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em capacity} & An int specifying the maximum number of items that should be kept in the dictionary. \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyExceptions}{Exceptions}
+{\em Value\+Error} & if {\ttfamily capacity} is not a natural number \\
+\hline
+\end{DoxyExceptions}
+\index{Py\+Infrastructure@{Py\+Infrastructure}!Get\+Intersection@{Get\+Intersection}}
+\index{Get\+Intersection@{Get\+Intersection}!Py\+Infrastructure@{Py\+Infrastructure}}
+\subsubsection[{\texorpdfstring{Get\+Intersection(self, kwargs)}{GetIntersection(self, kwargs)}}]{\setlength{\rightskip}{0pt plus 5cm}def Chronos.\+Map.\+Conjoining\+Indexed\+Multimap.\+Get\+Intersection (
+\begin{DoxyParamCaption}
+\item[{}]{self, }
+\item[{}]{kwargs}
+\end{DoxyParamCaption}
+)}\hypertarget{group__PyInfrastructure_gaf6acad2c10b1208a8f9a5f2d85de1865}{}\label{group__PyInfrastructure_gaf6acad2c10b1208a8f9a5f2d85de1865}
+
+
+Returns the intersection of all lookups specified in the keyword arguments. 
+
+This method can accept any keyword argument matching the name of one of the indexed lookup functions on a \hyperlink{classChronos_1_1Map_1_1ConjoiningIndexedMultimap}{Conjoining\+Indexed\+Multimap} instance. The returned value will always be a set containing the values that satisfied all provided lookups. If no arguments are provided, a set containing all values will be returned instead.
+
+Continuing from the previous example code\+:
+
+
+\begin{DoxyCode}
+1 conMap.GetIntersection(WhereAmI=\textcolor{stringliteral}{'testclerk1'}) == set([u1, u3])
+2 conMap.GetIntersection(WhoAmI=\textcolor{stringliteral}{'jka'}, WhereAmI=\textcolor{stringliteral}{'testclerk1'}) == set([u1])
+\end{DoxyCode}
+ \index{Py\+Infrastructure@{Py\+Infrastructure}!Get\+Logger@{Get\+Logger}}
+\index{Get\+Logger@{Get\+Logger}!Py\+Infrastructure@{Py\+Infrastructure}}
+\subsubsection[{\texorpdfstring{Get\+Logger()}{GetLogger()}}]{\setlength{\rightskip}{0pt plus 5cm}def Chronos.\+Event\+Logger.\+Event\+Logger.\+Get\+Logger (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [static]}}\hypertarget{group__PyInfrastructure_ga22b169d02d02c1c7db9de09d26cf1319}{}\label{group__PyInfrastructure_ga22b169d02d02c1c7db9de09d26cf1319}
+
+
+Gets the current \hyperlink{classChronos_1_1EventLogger_1_1EventLogger}{Event\+Logger} object. 
+
+This function should be used only to set/access properties of the \hyperlink{classChronos_1_1EventLogger_1_1EventLogger}{Event\+Logger} instance, not for logging. \index{Py\+Infrastructure@{Py\+Infrastructure}!index@{index}}
+\index{index@{index}!Py\+Infrastructure@{Py\+Infrastructure}}
+\subsubsection[{\texorpdfstring{index(func)}{index(func)}}]{\setlength{\rightskip}{0pt plus 5cm}def Chronos.\+Map.\+index (
+\begin{DoxyParamCaption}
+\item[{}]{func}
+\end{DoxyParamCaption}
+)}\hypertarget{group__PyInfrastructure_ga9f969afc54b404a47d37bdf6d5060f10}{}\label{group__PyInfrastructure_ga9f969afc54b404a47d37bdf6d5060f10}
+
+
+A method decorator that tags the associated method for indexing by \hyperlink{classChronos_1_1Map_1_1ConjoiningIndexedMultimap}{Conjoining\+Indexed\+Multimap}. 
+
+This decorator should only be used in subclasses of \hyperlink{classChronos_1_1Map_1_1MultimapValue}{Multimap\+Value}. 

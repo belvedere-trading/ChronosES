@@ -1,0 +1,97 @@
+\hypertarget{classChronos_1_1EventLogger_1_1EventLogger}{}\section{Chronos.\+Event\+Logger.\+Event\+Logger Class Reference}
+\label{classChronos_1_1EventLogger_1_1EventLogger}\index{Chronos.\+Event\+Logger.\+Event\+Logger@{Chronos.\+Event\+Logger.\+Event\+Logger}}
+
+
+Handles logging of events that should be consumed by Splunk.  
+
+
+Inheritance diagram for Chronos.\+Event\+Logger.\+Event\+Logger\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classChronos_1_1EventLogger_1_1EventLogger}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def \hyperlink{group__PyInfrastructure_ga909b4948081a7832e704215ec484dea4}{\+\_\+\+\_\+init\+\_\+\+\_\+} (self, application, log\+File\+Path, firm, info\+Sys, who\+AmI, where\+AmI, settings, handlers)
+\begin{DoxyCompactList}\small\item\em This constructor should only be called by an initialization function. \end{DoxyCompactList}\item 
+def {\bfseries Set\+Handlers} (self, handlers)
+\item 
+def {\bfseries Reset\+Handlers} (self)
+\item 
+def {\bfseries Set\+Level} (self, level)
+\end{DoxyCompactItemize}
+\subsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def {\bfseries Initialize\+Logger} (firm=None, info\+Sys=None, who\+AmI=None, where\+AmI=None, application=None, directory=None, settings=\hyperlink{classChronos_1_1EventLogger_1_1PersistentLoggerSettings}{Persistent\+Logger\+Settings}(), handler=None)
+\item 
+def {\bfseries Deinitialize\+Logger} ()
+\item 
+def {\bfseries Set\+Global\+Level} (level)
+\item 
+def \hyperlink{group__PyInfrastructure_ga22b169d02d02c1c7db9de09d26cf1319}{Get\+Logger} ()
+\begin{DoxyCompactList}\small\item\em Gets the current \hyperlink{classChronos_1_1EventLogger_1_1EventLogger}{Event\+Logger} object. \end{DoxyCompactList}\item 
+def {\bfseries Log\+Critical} (component, module, function, title, reason=None, tags=None)
+\item 
+def {\bfseries Log\+Error} (component, module, function, title, reason=None, tags=None)
+\item 
+def {\bfseries Log\+Warning} (component, module, function, title, reason=None, tags=None)
+\item 
+def {\bfseries Log\+Information} (component, module, function, title, reason=None, tags=None)
+\item 
+def {\bfseries Log\+Debug} (component, module, function, title, reason=None, tags=None)
+\item 
+def {\bfseries Log\+Exception} (component, module, function, title=None, reason=None, tags=None)
+\item 
+def {\bfseries Log\+Critical\+Auto} (obj, title, reason=None, tags=None)
+\item 
+def {\bfseries Log\+Error\+Auto} (obj, title, reason=None, tags=None)
+\item 
+def {\bfseries Log\+Warning\+Auto} (obj, title, reason=None, tags=None)
+\item 
+def {\bfseries Log\+Information\+Auto} (obj, title, reason=None, tags=None)
+\item 
+def {\bfseries Log\+Debug\+Auto} (obj, title, reason=None, tags=None)
+\item 
+def {\bfseries Log\+Exception\+Auto} (obj, title=None, reason=None, tags=None)
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+{\bfseries application}
+\item 
+{\bfseries log\+File\+Path}
+\item 
+{\bfseries firm}
+\item 
+{\bfseries info\+Sys}
+\item 
+{\bfseries who\+AmI}
+\item 
+{\bfseries where\+AmI}
+\item 
+{\bfseries settings}
+\item 
+{\bfseries handlers}
+\item 
+{\bfseries logger}
+\end{DoxyCompactItemize}
+\subsection*{Static Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+bool {\bfseries Initialized} = False
+\item 
+{\bfseries Logger} = None
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Handles logging of events that should be consumed by Splunk. 
+
+A single static \hyperlink{classChronos_1_1EventLogger_1_1EventLogger}{Event\+Logger} instance should exist for each application, created via one of the initialization functions. 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Chronos/Event\+Logger.\+py\end{DoxyCompactItemize}

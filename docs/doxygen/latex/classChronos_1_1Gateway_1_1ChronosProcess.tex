@@ -1,0 +1,101 @@
+\hypertarget{classChronos_1_1Gateway_1_1ChronosProcess}{}\section{Chronos.\+Gateway.\+Chronos\+Process Class Reference}
+\label{classChronos_1_1Gateway_1_1ChronosProcess}\index{Chronos.\+Gateway.\+Chronos\+Process@{Chronos.\+Gateway.\+Chronos\+Process}}
+
+
+The main logical component of the \hyperlink{classChronos_1_1Gateway_1_1ChronosGateway}{Chronos\+Gateway}.  
+
+
+Inheritance diagram for Chronos.\+Gateway.\+Chronos\+Process\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classChronos_1_1Gateway_1_1ChronosProcess}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def {\bfseries \+\_\+\+\_\+init\+\_\+\+\_\+} (self, aggregate\+Class, aggregate\+Registry, logic\+Version, core\+Provider\+Generator)
+\item 
+def \hyperlink{group__Chronos_gae5027792d4f78b27d2b2eed69eeae697}{Startup} (self)
+\begin{DoxyCompactList}\small\item\em Creates the Chronos Core instances required for processing and starts the \hyperlink{group__Chronos_gaefd9a9f928112951d36eb314ec1d1ef2}{Chronos\+Process\+::\+Event\+Loop} in a background thread. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gaf7218fb21583767ca7bda97becef62fd}{Shutdown} (self)
+\begin{DoxyCompactList}\small\item\em Cleans up the Chronos Core instances owned by this instance and stops the \hyperlink{group__Chronos_gaefd9a9f928112951d36eb314ec1d1ef2}{Chronos\+Process\+::\+Event\+Loop}. \end{DoxyCompactList}\item 
+def {\bfseries Assign\+Synchronization\+Proxy} (self, aggregate\+Name, proxy)
+\item 
+def {\bfseries Delete\+Synchronization\+Proxy} (self, aggregate\+Name)
+\item 
+def \hyperlink{group__Chronos_ga8b8d1338ffabd17cbf64eac8998b8f4b}{Send\+Event} (self, event\+Queue\+Item)
+\begin{DoxyCompactList}\small\item\em Enqueues in an event for processing. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_gaefd9a9f928112951d36eb314ec1d1ef2}{Event\+Loop} (self)
+\begin{DoxyCompactList}\small\item\em Event queue processing. \end{DoxyCompactList}\item 
+def {\bfseries Begin} (self)
+\item 
+def {\bfseries Commit} (self)
+\item 
+def {\bfseries Rollback} (self)
+\item 
+def \hyperlink{group__Chronos_ga5ae412d35ae2277be0ea6d2013d12129}{Process\+Event} (self, event\+Queue\+Item)
+\begin{DoxyCompactList}\small\item\em Determines the corresponding Python class to an event\+Type sent from a client and applies that type\textquotesingle{}s logic to the specified aggregate. \end{DoxyCompactList}\item 
+def \hyperlink{group__Chronos_ga886ff894876545d6abaa78d677386d36}{Get\+Unexpired\+Aggregate} (self, event\+Queue\+Item)
+\begin{DoxyCompactList}\small\item\em Attempts to retrieve the aggregate instance specified by event\+Queue\+Item. \end{DoxyCompactList}\item 
+def {\bfseries Apply\+Event} (self, aggregate, event\+Queue\+Item)
+\item 
+def {\bfseries Acquire} (self, aggregate\+Id)
+\item 
+def {\bfseries Release} (self, aggregate\+Id)
+\item 
+def \hyperlink{group__Chronos_ga4c27fcd186b8c17d47b2d6a6d0dd8d55}{Query} (self, query\+Item)
+\begin{DoxyCompactList}\small\item\em Processes a \hyperlink{classChronos_1_1Gateway_1_1ChronosQueryItem}{Chronos\+Query\+Item} to retrieve aggregate snapshots requested by a client. \end{DoxyCompactList}\item 
+def {\bfseries Get\+All\+Tags} (self)
+\item 
+def {\bfseries Get\+By\+Tag} (self, tag, aggregate\+Id)
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+{\bfseries aggregate\+Class}
+\item 
+{\bfseries aggregate\+Registry}
+\item 
+{\bfseries logic\+Version}
+\item 
+{\bfseries core\+Provider\+Generator}
+\item 
+{\bfseries process\+Synchronizer}
+\item 
+{\bfseries lock}
+\item 
+{\bfseries queue}
+\item 
+{\bfseries query\+Event}
+\item 
+{\bfseries is\+Running}
+\item 
+{\bfseries processing\+Thread}
+\item 
+{\bfseries core\+Provider}
+\item 
+{\bfseries index\+Store}
+\item 
+{\bfseries repository}
+\item 
+{\bfseries index}
+\item 
+{\bfseries processor}
+\item 
+{\bfseries max\+Request\+Id}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+The main logical component of the \hyperlink{classChronos_1_1Gateway_1_1ChronosGateway}{Chronos\+Gateway}. 
+
+Each aggregate that is registered with the service will have its own instance of \hyperlink{classChronos_1_1Gateway_1_1ChronosProcess}{Chronos\+Process}; each instance of \hyperlink{classChronos_1_1Gateway_1_1ChronosProcess}{Chronos\+Process} runs within its own physical process on the server.
+
+\hyperlink{classChronos_1_1Gateway_1_1ChronosProcess}{Chronos\+Process} has three main pieces of functionality\+: asynchronous event queue processing, synchronous query handling, and tag management. Query hanlding is separated from the other operations and cannot affect writing. Tags can optionally be specified along with specific events (in which case a failing tag creation will fail the entire event).
+
+This class is threadsafe and all exceptions should be logged and handled internally. 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Chronos/\hyperlink{Gateway_8py}{Gateway.\+py}\end{DoxyCompactItemize}
