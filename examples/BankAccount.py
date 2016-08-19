@@ -27,10 +27,16 @@ class CreateEvent(Event):
     def RaiseFor(self, aggregate):
         # This is the method that ChronosES will apply
         # each time an Event is sent
+        if self.version != 1:
+            raise ValidationError('Account has already been created')
         aggregate.owner = self.owner
         aggregate.balance = self.amount
 
-def _checkClosed(aggregate):
+def _ensureCreated(event):
+    if event.version == 1:
+        raise ValidationError('Account has not been created')
+
+def _ensureOpen(aggregate):
     if aggregate.isClosed:
         raise ValidationError('Account is closed')
 
@@ -39,7 +45,8 @@ class DepositEvent(Event):
     Proto = DepositEvent
 
     def RaiseFor(self, aggregate):
-        _checkClosed(aggregate)
+        _ensureCreated(self)
+        _ensureOpen(aggregate)
         if self.amount <= 0:
             raise ValidationError('Deposit amount must be greater than 0')
         aggregate.balance += self.amount
@@ -49,7 +56,8 @@ class WithdrawEvent(Event):
     Proto = WithdrawEvent
 
     def RaiseFor(self, aggregate):
-        _checkClosed(aggregate)
+        _ensureCreated(self)
+        _ensureOpen(aggregate)
         if self.amount <= 0:
             raise ValidationError('Withdrawl amount must be greater than 0')
         aggregate.balance -= self.amount
@@ -59,7 +67,8 @@ class CloseEvent(Event):
     Proto = CloseEvent
 
     def RaiseFor(self, aggregate):
-        _checkClosed(aggregate)
+        _ensureCreated(self)
+        _ensureOpen(aggregate)
         if aggregate.balance != 0:
             raise ValidationError('Cannot close an account with a balance greater than 0')
         aggregate.isClosed = True
