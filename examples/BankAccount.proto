@@ -1,0 +1,26 @@
+syntax='proto3';
+// The package name must be exactly Chronos.{AggregateName}
+package Chronos.BankAccount;
+
+// The Aggregate message's name must match the AggregateName above exactly
+message BankAccount {
+  string owner = 1;
+  int32 balance = 2;
+  bool isClosed = 3;
+}
+
+message CreateEvent {
+  string owner = 1;
+  int32 amount = 2;
+}
+
+message DepositEvent {
+  int32 amount = 1;
+}
+
+message WithdrawEvent {
+  int32 amount = 1;
+}
+
+message CloseEvent {
+}

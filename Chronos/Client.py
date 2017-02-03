@@ -11,7 +11,7 @@ import pkg_resources
 import sys
 import uuid
 from collections import namedtuple
-from threading import RLock
+from threading import RLock, Lock
 
 from Chronos.EventLogger import EventLogger
 from Chronos.Processor import BackgroundQueueProcessor
@@ -19,7 +19,7 @@ from Chronos.Processor import BackgroundQueueProcessor
 from Chronos.Chronos_pb2 import (ChronosRegistrationRequest, ChronosRegistrationResponse, ChronosManagementNotification,
                                               ChronosRequest, ChronosRequestWithTag, ChronosTransactionRequest, ChronosResponse, ChronosQueryAllRequest,
                                               ChronosQueryByIdRequest, ChronosQueryByIndexRequest, ChronosQueryResponse,
-                                              ChronosQueryByTagRequest, ChronosTagList)
+                                              ChronosQueryByTagRequest)
 
 from Chronos.Infrastructure import InfrastructureProvider, ConfigurablePlugin
 
@@ -32,39 +32,34 @@ class SubscriptionManager(object):
     SubscriptionManager is primarily responsible for ensuring that subscriptions remain consistent through Redis
     failures and Chronos index schema divergence.
     """
-    def __init__(self, eventStore, aggregateClass, successCallback, failureCallback, managementCallback):
+    def __init__(self, notifier, aggregateClass, successCallback, failureCallback, managementCallback):
         """Initializes a new SubscriptionManager instance.
-        @param eventStore The Chronos::Infrastructure::AbstractEventStore instance to use for subscription
-        @param aggregateName the name of the Aggregate to be subscribed for
+        @param notifier The Chronos::Infrastructure::Abstractnotifier instance to use for subscription
+        @param aggregateClass A Chronos::Core::Aggregate subclass specifying the aggregate to subscribe to
         @param successCallback a callable object used as the Redis subscription callback for successful Chronos event messages
         @param failureCallback a callable object used as the Redis subscription callback for failed Chronos event messages
         @param managementCallback a callable object used as the Redis subscription callback for Chronos management messages
         """
-        self.eventStore = eventStore
+        self.notifier = notifier
         self.aggregateName = aggregateClass.__name__
         self.successCallback = successCallback
         self.failureCallback = failureCallback
         self.managementCallback = managementCallback
-        keyGeneratorFunc = eventStore.KeyGenerator
-        keyGenerator = keyGeneratorFunc(aggregateClass)
-        self.subscriptionPrefix = keyGenerator.hashKey
-        self.failureChannel = keyGenerator.GetFailureTopic()
-        self.managementChannel = keyGenerator.GetManagementTopic()
         self.subscriptions = {}
         self.lock = RLock() # Needs to be RLock for resubscription
         self.indexedAttributes = None
 
     def SubscribeForUnifiedUpdates(self):
-        """Subscribes @p eventStore for Chronos failure and management messages.
+        """Subscribes @p notifier for Chronos failure and management messages.
         These messages are considered 'unified' because the subscription channels do not change.
         Additionally, management messages are required to ensure that Aggregate instance subscriptions remain consistent.
         """
         try:
-            self.eventStore.Subscribe(self.subscriptionPrefix, self.failureChannel, self.failureCallback)
+            self.notifier.SubscribeForFailure(self.failureCallback)
         except Exception:
             EventLogger.LogExceptionAuto(self, 'Error in unified subscription: failure channel')
         try:
-            self.eventStore.Subscribe(self.subscriptionPrefix, self.managementChannel, self.managementCallback)
+            self.notifier.SubscribeForManagement(self.managementCallback)
         except Exception:
             EventLogger.LogExceptionAuto(self, 'Error in unified subscription: management channel')
         EventLogger.LogInformationAuto(self, 'Subscribed for unified Chronos updates', tags={'Aggregate': self.aggregateName})
@@ -74,20 +69,14 @@ class SubscriptionManager(object):
         @see SubscribeForUnifiedUpdates
         """
         try:
-            self.eventStore.Unsubscribe(self.subscriptionPrefix, self.failureChannel)
+            self.notifier.UnsubscribeForFailure()
         except Exception:
             EventLogger.LogExceptionAuto(self, 'Error in unified unsubscription: failure channel')
         try:
-            self.eventStore.Unsubscribe(self.subscriptionPrefix, self.managementChannel)
+            self.notifier.UnsubscribeForManagement()
         except Exception:
             EventLogger.LogExceptionAuto(self, 'Error in unified unsubscription: management channel')
         EventLogger.LogInformationAuto(self, 'Unsubscribed for unified Chronos updates', tags={'Aggregate': self.aggregateName})
-
-    def _getSubscriptionChannel(self, indices):
-        subscriptionChannel = self.subscriptionPrefix
-        if len(self.indexedAttributes) > 0:
-            subscriptionChannel += '.' + '.'.join([str(indices.get(attr, '*')) for attr in self.indexedAttributes])
-        return subscriptionChannel
 
     def Subscribe(self, indices):
         """Subscribes for messages for Aggregate instances that match the fields provided in @p indices.
@@ -101,18 +90,18 @@ class SubscriptionManager(object):
         """
         if self.indexedAttributes is None:
             raise ChronosClientException('Unable to subscribe; indexedAttributes not set')
-        subscriptionChannel = self._getSubscriptionChannel(indices)
+        subscriptionChannel = self.notifier.GetSubscriptionChannel(indices, self.indexedAttributes)
         with self.lock:
             if subscriptionChannel in self.subscriptions:
                 raise ChronosClientException('Already subscribed to {0}'.format(subscriptionChannel))
             self.subscriptions[subscriptionChannel] = indices
-            self.eventStore.Subscribe(self.subscriptionPrefix, subscriptionChannel, self.successCallback)
+            self.notifier.Subscribe(subscriptionChannel, self.successCallback)
             EventLogger.LogInformationAuto(self, 'Subscribed for Chronos updates', tags={'Aggregate': self.aggregateName,
                                                                                          'Channel': subscriptionChannel})
 
     def _unsubscribe(self, channel):
         del self.subscriptions[channel]
-        self.eventStore.Unsubscribe(self.subscriptionPrefix, channel)
+        self.notifier.Unsubscribe(channel)
         EventLogger.LogInformationAuto(self, 'Unsubscribed for Chronos updates', tags={'Aggregate': self.aggregateName,
                                                                                        'Channel': channel})
 
@@ -126,7 +115,7 @@ class SubscriptionManager(object):
         """
         if self.indexedAttributes is None:
             raise ChronosClientException('Unable to unsubscribe; indexedAttributes not set')
-        subscriptionChannel = self._getSubscriptionChannel(indices)
+        subscriptionChannel = self.notifier.GetSubscriptionChannel(indices, self.indexedAttributes)
         if subscriptionChannel not in self.subscriptions:
             return
         with self.lock:
@@ -151,8 +140,17 @@ class SubscriptionManager(object):
 
         @param indexedAttributes a sorted list of attributes that are currently indexed by Chronos for the Aggregate in question
         """
-        if indexedAttributes == self.indexedAttributes:
-            return
+
+        if self.indexedAttributes and len(self.indexedAttributes) == len(indexedAttributes):
+            equal = True
+
+            for i in range(len(self.indexedAttributes)):
+                if (self.indexedAttributes[i].attributeName != indexedAttributes[i].attributeName or
+                   self.indexedAttributes[i].isCaseInsensitive != indexedAttributes[i].isCaseInsensitive):
+                    equal = False
+            if equal:
+                return
+
         with self.lock:
             self.indexedAttributes = indexedAttributes
             for channel, indices in self.subscriptions.items():
@@ -177,11 +175,10 @@ EventResponse = namedtuple('EventResponse', ['version', 'logicVersion', 'event',
 class ChronosTransactionItem(object):
     """Represents a single action that should take place as part of an atomic Chronos transaction.
     """
-    def __init__(self, event, aggregateId=0, tag=None, tagExpiration=0):
+    def __init__(self, event, aggregateId=0, tag=None):
         self.event = event
         self.aggregateId = aggregateId
         self.tag = tag
-        self.tagExpiration = tagExpiration
 
 class ChronosClient(object):
     # Allows for simpler parsing in ParseEventResponse
@@ -191,6 +188,7 @@ class ChronosClient(object):
                  managementCallback=None, infrastructureProvider=None, **kwargs):
         if infrastructureProvider is None:
             infrastructureProvider = InfrastructureProvider()
+        self.clientLock = Lock()
         self.clientId = uuid.uuid4()
         self.aggregateProtoClass = aggregateProtoClass
         self.aggregateName = aggregateProtoClass.__name__
@@ -203,25 +201,36 @@ class ChronosClient(object):
         self.failureProcessor.StartProcessing()
         self.managementProcessor = BackgroundQueueProcessor(target=self._managementCallback)
         self.managementProcessor.StartProcessing()
-        self.subscriptionManager = SubscriptionManager(infrastructureProvider.GetConfigurablePlugin(ConfigurablePlugin.EventStore, **kwargs),
+        self.subscriptionManager = SubscriptionManager(infrastructureProvider.GetConfigurablePlugin(ConfigurablePlugin.Notifier,
+                                                                                                    aggregateClass=aggregateProtoClass, **kwargs),
                                                        self.aggregateProtoClass,
                                                        self._internalHandleNotification,
                                                        self._internalHandleNotification,
                                                        self.managementProcessor.Enqueue)
-        self.serviceProxyManager = infrastructureProvider.GetConfigurablePlugin(ConfigurablePlugin.ServiceProxyManager, **kwargs)
+        if not 'clientProxyChangedFunc' in kwargs:
+            kwargs['clientProxyChangedFunc'] = self._onClientProxyChanged
+        self.serviceProxyManager = infrastructureProvider.GetConfigurablePlugin(ConfigurablePlugin.ServiceProxyManager,
+                                                                                **kwargs)
         self.subscriptionManager.SubscribeForUnifiedUpdates()
         try:
-            self.client = self.serviceProxyManager.Connect()
+            with self.clientLock:
+                self.client = self.serviceProxyManager.Connect()
         except Exception:
             EventLogger.LogExceptionAuto(self, 'Failed to connect to Chronos service')
             raise
 
     def Connect(self):
-        self.client = self.serviceProxyManager.Connect()
+        with self.clientLock:
+            self.client = self.serviceProxyManager.Connect()
 
     def Disconnect(self):
         self.serviceProxyManager.Disconnect()
-        self.client = None
+        with self.clientLock:
+            self.client = None
+
+    def _onClientProxyChanged(self, client):
+        with self.clientLock:
+            self.client = client
 
     def Dispose(self):
         self.subscriptionManager.UnsubscribeForUnifiedUpdates()
@@ -233,7 +242,7 @@ class ChronosClient(object):
             try:
                 self.serviceProxyManager.Dispose()
             except Exception:
-                EventLogger.LogExceptionAuto(self, 'Failed to dispose consumer')
+                EventLogger.LogExceptionAuto(self, 'Failed to dispose serviceProxyManager')
             finally:
                 self.serviceProxyManager = None
 
@@ -272,7 +281,6 @@ class ChronosClient(object):
         else:
             raise ValueError('Unknown event type {0}'.format(eventProto.type))
 
-        event = eventType() #pylint: disable=W0631
         event.ParseFromString(eventProto.proto)
         return EventResponse(eventProto.version, eventProto.logicVersion, event, eventProto.receivedTimestamp,
                              eventProto.processedTimestamp)
@@ -288,13 +296,21 @@ class ChronosClient(object):
         EventLogger.LogInformationAuto(self, 'Registering aggregate',
                                        tags={'Aggregate': self.aggregateName})
         try:
-            moduleName = self.__module__.split('.', 1)[0]
-            pythonFileContents = pkg_resources.resource_string(moduleName,
-                os.path.join('ChronosScripts', self.aggregateName + '.py'))
-            protoFileContents = pkg_resources.resource_string(moduleName,
-                os.path.join('ChronosScripts', self.aggregateName + '.proto'))
             request = ChronosRegistrationRequest()
             request.aggregateName = self.aggregateName
+
+            chronosScriptLocation = os.getenv('CHRONOS_SCRIPT_LOCATION', None)
+            if chronosScriptLocation is not None:
+                with open(os.path.join(chronosScriptLocation, self.aggregateName + '.py'), 'r') as pythonFile:
+                    pythonFileContents = pythonFile.read()
+                with open(os.path.join(chronosScriptLocation, self.aggregateName + '.proto'), 'r') as protoFile:
+                    protoFileContents = protoFile.read()
+            else:
+                moduleName = self.__module__.split('.', 1)[0]
+                pythonFileContents = pkg_resources.resource_string(moduleName,
+                                                                   os.path.join('ChronosScripts', self.aggregateName + '.py'))
+                protoFileContents = pkg_resources.resource_string(moduleName,
+                                                                  os.path.join('ChronosScripts', self.aggregateName + '.proto'))
             request.aggregateLogic.pythonFileContents = pythonFileContents #pylint: disable=E1101
             request.aggregateLogic.protoFileContents = protoFileContents #pylint: disable=E1101
         except Exception:
@@ -304,7 +320,8 @@ class ChronosClient(object):
             raise ChronosClientException, excInfo[1], excInfo[2]
 
         try:
-            resp = self.client.RegisterAggregate(request.SerializeToString())
+            with self.clientLock:
+                resp = self.client.RegisterAggregate(request.SerializeToString())
             return self._processRawRegistrationReponse(resp)
         except Exception:
             EventLogger.LogExceptionAuto(self, 'Error registering', tags={'Aggregate': self.aggregateName})
@@ -316,7 +333,8 @@ class ChronosClient(object):
         Either this method or Register must be called in order to use Subscribe.
         """
         try:
-            resp = self.client.CheckStatus(self.aggregateName)
+            with self.clientLock:
+                resp = self.client.CheckStatus(self.aggregateName)
             return self._processRawRegistrationReponse(resp)
         except Exception:
             EventLogger.LogExceptionAuto(self, 'Error checking status',
@@ -325,7 +343,8 @@ class ChronosClient(object):
             raise ChronosClientException, excInfo[1], excInfo[2]
 
     def Unregister(self):
-        self.client.UnregisterAggregate(self.aggregateName)
+        with self.clientLock:
+            self.client.UnregisterAggregate(self.aggregateName)
 
     def RaiseEvent(self, event, aggregateId=0):
         try:
@@ -338,12 +357,13 @@ class ChronosClient(object):
             excInfo = sys.exc_info()
             raise ChronosClientException, excInfo[1], excInfo[2]
 
-        requestId = self.client.ProcessEvent(request.SerializeToString())
+        with self.clientLock:
+            requestId = self.client.ProcessEvent(request.SerializeToString())
         return requestId
 
-    def RaiseEventWithTag(self, tag, event, aggregateId=0, tagExpiration=0):
+    def RaiseEventWithTag(self, tag, event, aggregateId=0):
         try:
-            request = ChronosRequestWithTag(tag=tag, tagExpiration=tagExpiration)
+            request = ChronosRequestWithTag(tag=tag)
             request.request.senderId = self.clientId.bytes #pylint: disable=E1101
             request.request.aggregateId = aggregateId #pylint: disable=E1101
             request.request.eventType = self.TypeOf(event.__class__) #pylint: disable=E1101
@@ -354,7 +374,8 @@ class ChronosClient(object):
             excInfo = sys.exc_info()
             raise ChronosClientException, excInfo[1], excInfo[2]
 
-        requestId = self.client.ProcessEventWithTag(request.SerializeToString())
+        with self.clientLock:
+            requestId = self.client.ProcessEventWithTag(request.SerializeToString())
         return requestId
 
     def RaiseTransaction(self, events):
@@ -364,7 +385,6 @@ class ChronosClient(object):
                 item = request.requests.add() # pylint: disable=E1101
                 if event.tag is not None:
                     request.tag = event.tag
-                    request.tagExpiration = event.tagExpiration
                 item.request.senderId = self.clientId.bytes #pylint: disable=E1101
                 item.request.aggregateId = event.aggregateId #pylint: disable=E1101
                 item.request.eventType = self.TypeOf(event.event.__class__) #pylint: disable=E1101
@@ -375,7 +395,8 @@ class ChronosClient(object):
             excInfo = sys.exc_info()
             raise ChronosClientException, excInfo[1], excInfo[2]
 
-        requestId = self.client.ProcessTransaction(request.SerializeToString())
+        with self.clientLock:
+            requestId = self.client.ProcessTransaction(request.SerializeToString())
         return requestId
 
     def _internalHandleNotification(self, message):
@@ -443,7 +464,8 @@ class ChronosClient(object):
         try:
             request = ChronosQueryAllRequest()
             request.aggregateName = self.aggregateName
-            serverResponse = self.client.GetAll(request.SerializeToString())
+            with self.clientLock:
+                serverResponse = self.client.GetAll(request.SerializeToString())
         except Exception:
             EventLogger.LogExceptionAuto(self, 'Unable to retrieve aggregates')
             excInfo = sys.exc_info()
@@ -456,7 +478,8 @@ class ChronosClient(object):
             request = ChronosQueryByIdRequest()
             request.aggregateName = self.aggregateName
             request.aggregateId = aggregateId
-            serverResponse = self.client.GetById(request.SerializeToString())
+            with self.clientLock:
+                serverResponse = self.client.GetById(request.SerializeToString())
         except Exception:
             EventLogger.LogExceptionAuto(self, 'Unable to retrieve aggregate',
                                          tags={'AggregateId': aggregateId})
@@ -472,6 +495,7 @@ class ChronosClient(object):
             for key, value in kwargs.iteritems():
                 request.indexKeys.append(key) #pylint: disable=E1101
                 request.indexKeys.append(str(value)) #pylint: disable=E1101
+            with self.clientLock:
                 serverResponse = self.client.GetByIndex(request.SerializeToString())
         except Exception:
             EventLogger.LogExceptionAuto(self, 'Unable to retrieve aggregates from index',
@@ -498,7 +522,8 @@ class ChronosClient(object):
             request.aggregateName = self.aggregateName
             request.tag = tag
             request.aggregateId = aggregateId
-            serverResponse = self.client.GetByTag(request.SerializeToString())
+            with self.clientLock:
+                serverResponse = self.client.GetByTag(request.SerializeToString())
             response = ChronosQueryResponse()
             response.ParseFromString(serverResponse)
             if response.responseCode == ChronosQueryResponse.TAG_NOT_FOUND: #pylint: disable=E1101
@@ -509,15 +534,5 @@ class ChronosClient(object):
             raise
         except Exception:
             EventLogger.LogExceptionAuto(self, 'Error retrieving tag', tags={'Tag': tag})
-            excInfo = sys.exc_info()
-            raise ChronosClientException, excInfo[1], excInfo[2]
-
-    def GetAllTags(self):
-        try:
-            response = ChronosTagList()
-            response.ParseFromString(self.client.GetTags(self.aggregateName))
-            return [tag for tag in response.tags] #pylint: disable=E1101
-        except Exception:
-            EventLogger.LogExceptionAuto(self, 'Error retrieving all tags')
             excInfo = sys.exc_info()
             raise ChronosClientException, excInfo[1], excInfo[2]

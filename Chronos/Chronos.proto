@@ -1,31 +1,32 @@
+syntax='proto3';
+
 package BT.Chronos.Proto;
 
 message EventProto {
-  optional string type = 1;
-  optional int64 version = 2;
-  optional int64 logicVersion = 3;
-  optional bytes proto = 4;
-  optional int64 receivedTimestamp = 5;
-  optional int64 processedTimestamp = 6;
+  string type = 1;
+  int64 version = 2;
+  int64 logicVersion = 3;
+  bytes proto = 4;
+  int64 receivedTimestamp = 5;
+  int64 processedTimestamp = 6;
 }
 
 message AggregateProto {
-  optional int64 aggregateId = 1;
-  optional int64 version = 2;
-  optional bytes proto = 3;
+  int64 aggregateId = 1;
+  int64 version = 2;
+  bytes proto = 3;
 }
 
 message ChronosRequest {
-  optional int64 aggregateId = 1;
-  optional string eventType = 2;
-  optional bytes eventProto = 3;
-  optional bytes senderId = 4;
+  int64 aggregateId = 1;
+  string eventType = 2;
+  bytes eventProto = 3;
+  bytes senderId = 4;
 }
 
 message ChronosRequestWithTag {
-  optional ChronosRequest request = 1;
-  optional string tag = 2;
-  optional int32 tagExpiration = 3;
+  ChronosRequest request = 1;
+  string tag = 2;
 }
 
 message ChronosTransactionRequest {
@@ -33,8 +34,8 @@ message ChronosTransactionRequest {
 }
 
 message ChronosPair {
-   optional string key = 1;
-   optional string value = 2;
+   string key = 1;
+   string value = 2;
 }
 
 message ChronosResponse {
@@ -43,23 +44,28 @@ message ChronosResponse {
     FAILURE = 1;
   }
 
-  optional int64 requestId = 1;
-  optional ResponseCode responseCode = 2;
-  optional string responseMessage = 3;
-  optional EventProto eventProto = 4;
-  optional AggregateProto aggregateProto = 5;
-  optional bytes senderId = 6;
+  int64 requestId = 1;
+  ResponseCode responseCode = 2;
+  string responseMessage = 3;
+  EventProto eventProto = 4;
+  AggregateProto aggregateProto = 5;
+  bytes senderId = 6;
   repeated ChronosPair additionalInformation = 7;
 }
 
 message AggregateLogic {
-  optional string protoFileContents = 1;
-  optional string pythonFileContents = 2;
+  string protoFileContents = 1;
+  string pythonFileContents = 2;
 }
 
 message ChronosRegistrationRequest {
-  optional string aggregateName = 1;
-  optional AggregateLogic aggregateLogic = 2;
+  string aggregateName = 1;
+  AggregateLogic aggregateLogic = 2;
+}
+
+message IndexedAttribute {
+  string attributeName = 1;
+  bool isCaseInsensitive = 2;
 }
 
 message ChronosRegistrationResponse {
@@ -68,9 +74,9 @@ message ChronosRegistrationResponse {
     FAILURE = 1;
   }
 
-  optional ResponseCode responseCode = 1;
-  optional string responseMessage = 2;
-  repeated string indexedAttributes = 3;
+  ResponseCode responseCode = 1;
+  string responseMessage = 2;
+  repeated IndexedAttribute indexedAttributes = 3;
 }
 
 message ChronosManagementNotification {
@@ -80,29 +86,29 @@ message ChronosManagementNotification {
     INDEX_DIVERGED = 2;
   }
 
-  optional NotificationType notificationType = 1;
-  optional int64 aggregateId = 2; // Only set for INDEX_DIVERGED
-  repeated string indexedAttributes = 3; // Only set for REGISTERED
+  NotificationType notificationType = 1;
+  int64 aggregateId = 2; // Only set for INDEX_DIVERGED
+  repeated IndexedAttribute indexedAttributes = 3; // Only set for REGISTERED
 }
 
 message ChronosQueryAllRequest {
-  optional string aggregateName = 1;
+  string aggregateName = 1;
 }
 
 message ChronosQueryByIdRequest {
-  optional string aggregateName = 1;
-  optional int64 aggregateId = 2;
+  string aggregateName = 1;
+  int64 aggregateId = 2;
 }
 
 message ChronosQueryByIndexRequest {
-  optional string aggregateName = 1;
+  string aggregateName = 1;
   repeated string indexKeys = 2;
 }
 
 message ChronosQueryByTagRequest {
-  optional string aggregateName = 1;
-  optional string tag = 2;
-  optional int64 aggregateId = 3;
+  string aggregateName = 1;
+  string tag = 2;
+  int64 aggregateId = 3;
 }
 
 message ChronosQueryResponse {
@@ -112,5 +118,5 @@ message ChronosQueryResponse {
   }
 
   repeated AggregateProto aggregates = 1;
-  optional ResponseCode responseCode = 2;
+  ResponseCode responseCode = 2;
 }

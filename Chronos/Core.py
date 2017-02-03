@@ -5,24 +5,23 @@
 import copy
 import glob
 import imp
+import json
 import os
+import pickle
+import re
 import subprocess
 import sys
 import threading
 import time
-from multiprocessing import Lock, Pool
+from abc import ABCMeta, abstractmethod
+from collections import namedtuple
 
-from google.protobuf import message
-from sqlalchemy import Column, BigInteger, Boolean, UniqueConstraint, Integer, String, create_engine, event
-from sqlalchemy.ext.declarative import as_declarative, declared_attr, DeclarativeMeta, AbstractConcreteBase
-from sqlalchemy.orm import sessionmaker
+from google.protobuf import message, json_format
 
 from Chronos.EventLogger import EventLogger
 from Chronos.Map import LRUEvictingMap
-from Chronos.Chronos_pb2 import EventProto, ChronosManagementNotification
+from Chronos.Chronos_pb2 import EventProto, ChronosManagementNotification, ChronosResponse
 
-from Chronos.Infrastructure import (PersistenceBufferItem, PersistenceBufferFailureItem, PersistenceBufferManagementItem, PersistenceBufferTagItem,
-                                    InfrastructureProvider, ConfigurablePlugin)
 
 class ChronosCoreException(Exception):
     """An Exception indicating that Chronos has encountered an error from
@@ -36,6 +35,7 @@ class ChronosSemanticException(Exception):
     violates required semantics for event sourcing or notification."""
     pass
 
+
 class ValidationError(Exception):
     """An Exception for use in Event subclasses to indicate that the event is logically invalid.
     Raising this Exception from within Event::RaiseFor will still cause the event application to fail,
@@ -45,105 +45,129 @@ class ValidationError(Exception):
         super(ValidationError, self).__init__(exceptionMessage)
         self.tags = tags
 
-class ChronosDeclarativeMeta(DeclarativeMeta):
-    """A metaclass that tracks the current state of a Chronos declarative index.
-    This is required because SQLAlchemy doesn't have a built in way to remove columns
-    that have already been attached to a table. Instead, we must manually ignore the 'extra'
-    columns through __mapper_args__."""
-    def __init__(cls, classname, bases, dct):
+
+class ChronosFailedEventPersistenceException(Exception):
+    """An Exception indicating that the events failed to be persisted to either the notifier or the database; likely as a result of a connection loss."""
+    pass
+
+
+class ChronosConstraint(object):
+    """Provides ensurance that all ChronosConstraints have a unique (and non-None) name to identify them by.
+    All Constraints must inherit from ChronosConstraint
+    """
+    __metaclass__ = ABCMeta
+    def __init__(self, *args, **kwargs):
+        try:
+            self.name = kwargs['name']
+        except KeyError:
+            raise ChronosCoreException('Not given name for {}. Constraints must be given a name'.format(self.__class__.__name__))
+        if self.name is None:
+            raise ChronosCoreException('Given None constraint name. Constraint names must be unique, non-None, and contain only alphanumeric characters and underscores')
+        self.validName = re.compile(r'^[a-zA-Z0-9_]+$')
+        if not self._isValid(self.name):
+            raise ChronosCoreException(
+                'Given invalid constraint name {0}.Constraint names must be unique, non-None, and contain only alphanumeric characters and underscores'.format(self.name))
+        self.attributes = set(args)
+
+    def _isValid(self, name):
+        return self.validName.match(name) # only alphanumeric and underscores allowed
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return set(self.attributes) == set(other.attributes) and self.name == other.name
+        return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    @abstractmethod
+    def Create(self, aggregateName, databaseConnection):
+        pass
+
+    @abstractmethod
+    def Drop(self, aggregateName, databaseConnection):
+        pass
+
+
+class Unique(ChronosConstraint):
+    """Provides the ability to add unique constraints on the attributes provided. If more than one attribute is passed, the unique constraint will be
+    on the composition of the keys. If it is desired to have multiple fields be unique individually, a Unique must be created for each attribute specifically.
+    """
+    def __init__(self, *args, **kwargs):
+        super(Unique, self).__init__(*args, **kwargs)
+
+    def Create(self, aggregateName, databaseConnection):
+        databaseConnection.CreateUniqueConstraint(aggregateName, self.name, self.attributes)
+
+    def Drop(self, aggregateName, databaseConnection):
+        databaseConnection.DropIndex(self.name)
+
+
+class Index(ChronosConstraint):
+    """Speeds up index queries on the specfied attribute. """
+    def __init__(self, *args, **kwargs):
+        super(Index, self).__init__(*args, **kwargs)
+
+    def Create(self, aggregateName, databaseConnection):
+        databaseConnection.CreateIndex(aggregateName, self.name, self.attributes)
+
+    def Drop(self, aggregateName, databaseConnection):
+        databaseConnection.DropIndex(self.name)
+
+
+class NonNull(ChronosConstraint):
+    """Requires that the values associated with the specified attributes be non-null"""
+    def __init__(self, *args, **kwargs):
+        super(NonNull, self).__init__(*args, **kwargs)
+
+    def Create(self, aggregateName, databaseConnection):
+        databaseConnection.CreateNonNullConstraint(aggregateName, self.name, self.attributes)
+
+    def Drop(self, aggregateName, databaseConnection):
+        databaseConnection.DropConstraint(aggregateName, self.name)
+
+
+class NoCase(ChronosConstraint):
+    """Ensures case insensitivity for specified attributes. """
+    def __init__(self, *args, **kwargs):
+        super(NoCase, self).__init__(*args, name='*', **kwargs)
+
+    def _isValid(self, name):
+        return True
+
+    def Create(self, aggregateName, databaseConnection):
+        pass
+
+    def Drop(self, aggregateName, databaseConnection):
+        pass
+
+class ChronosIndexMeta(type):
+    def __init__(cls, name, bases, dct):
+        super(ChronosIndexMeta, cls).__init__(name, bases, dct)
         cls.IndexedAttributes = set() #pylint: disable=C0103
-        for attr, value in dct.iteritems():
-            if isinstance(value, Column):
-                cls.IndexedAttributes.add(attr)
-        super(ChronosDeclarativeMeta, cls).__init__(classname, bases, dct)
+        cls.Constraints = set() #pylint: disable=C0103
+        cls.NoCaseAttributes = set() #pylint: disable=C0103
+        try:
+            cls.IndexedAttributes = set(dct['attributes'])
+            cls.Constraints = set(dct['constraints'])
+        except TypeError:
+            raise ChronosSemanticException('Ensure that both attributes and constraints are iterable tuples')
+        except KeyError:
+            pass
 
-@as_declarative(metaclass=ChronosDeclarativeMeta)
-class ChronosDeclarativeBase(object):
-    BaseConfig = {'extend_existing': True}
-    constraints = []
+        noCaseConstraints = [constraint for constraint in cls.Constraints if isinstance(constraint, NoCase)]
+        if len(noCaseConstraints) > 1:
+            raise ChronosSemanticException(
+                'Only one NoCase constraint can be applied. If you wish to make multiple attributes case insensitve just append them to a single NoCase constraint.')
+        if len(noCaseConstraints) == 0:
+            return
 
-    @declared_attr
-    def __table_args__(cls): #pylint: disable=E0213
-        if not cls.constraints:
-            return cls.BaseConfig
-        if cls.BaseConfig not in cls.constraints:
-            cls.constraints.append(cls.BaseConfig)
-        return tuple(cls.constraints)
-
-    def ToJson(self):
-        return dict((c.name, getattr(self, c.name)) for c in self.__table__.columns) #pylint: disable=E1101
-
-class ChronosIndex(AbstractConcreteBase, ChronosDeclarativeBase):
-    """The declarative base class for Chronos indices.
-    This class expects subclasses to declare any aggregate properties that should be indexed
-    as SQLAlchemy Columns. Any constraints or sql indices should be provided via the
-    constraints classmember.
-
-    It is important that the class name of a Chronos index class never changes - this would
-    cause a discrepancy in index table names through time and could result in permanent data loss."""
-    SharedProperties = ('aggregateId', 'isArchived', 'maxArchivedVersion')
-
-    @declared_attr
-    def __tablename__(cls): #pylint: disable=E0213
-        return cls.__name__.lower() #pylint: disable=E1101
-
-    @declared_attr
-    def __mapper_args__(cls): #pylint: disable=E0213
-        if cls == ChronosIndex:
-            return {}
-        properties = list(cls.IndexedAttributes) #pylint: disable=E1101
-        properties.extend(cls.SharedProperties)
-        return {'include_properties': properties, 'concrete': True,
-                'polymorphic_identity': cls.__tablename__}
-
-    aggregateId = Column(BigInteger, primary_key=True, autoincrement=False, nullable=False)
-    isArchived = Column(Boolean, nullable=False, default=False)
-    maxArchivedVersion = Column(BigInteger, nullable=False, default=0)
-
-    @classmethod
-    def CreateTagModel(cls):
-        class ChronosTag(ChronosDeclarativeBase):
-            """The SQLAlchemy model for Chronos tag databases.
-            Each Aggregate has its own tag database with the same schema (as specified by this class).
-            This database is used to ensure consistency of tags across both live and archived data,
-            as well as improving the performance of the history service by providing metadata about tags
-            that would not be easily accessible otherwise."""
-            constraints = [UniqueConstraint('aggregateId', 'tag', name='uix_aggregateId_tag')]
-
-            @declared_attr
-            def __tablename__(kls): #pylint:disable=E0213,R0201
-                return cls.__name__.lower() + '_tag'
-
-            @declared_attr
-            def __mapper_args__(kls): #pylint:disable=E0213
-                return {'include_properties': ['tagId', 'aggregateId', 'tag', 'createDate', 'isArchived'], 'concrete': True,
-                        'polymorphic_identity': kls.__tablename__}
+        cls.NoCaseAttributes = set([attribute for attribute in noCaseConstraints[0].attributes])
 
 
+class ChronosIndex(object):
+    __metaclass__ = ChronosIndexMeta
 
-            tagId = Column(Integer, primary_key=True, nullable=False)
-            aggregateId = Column(BigInteger, nullable=False)
-            tag = Column(String, nullable=False)
-            createDate = Column(BigInteger, nullable=False)
-            isArchived = Column(Boolean, default=False, nullable=True)
-        return ChronosTag
-
-    @classmethod
-    def CreateCheckpointModel(cls):
-        class ChronosCheckpoint(ChronosDeclarativeBase):
-            """The SQLAlchemy model for Chronos checkpoint databases."""
-            @declared_attr
-            def __tablename__(kls): #pylint:disable=E0213,R0201
-                return cls.__name__.lower() + '_checkpoint'
-
-            @declared_attr
-            def __mapper_args__(kls): #pylint:disable=E0213
-                return {'include_properties': ['checkpointId', 'maxRequestId'], 'concrete': True,
-                        'polymorphic_identity': kls.__tablename__}
-
-            checkpointId = Column(Integer, primary_key=True, nullable=False)
-            maxRequestId = Column(Integer, unique=True, nullable=False)
-        return ChronosCheckpoint
 
 class ChronosBase(object):
     """Provides common functionality for Chronos base classes, Aggregate and Event.
@@ -152,14 +176,19 @@ class ChronosBase(object):
     #pylint: disable=E1101,W0640
     def __init__(self):
         self.proto = self.Proto()
-        for field in self.Proto.DESCRIPTOR.fields:
-            prop = property(lambda self, name=field.name: getattr(self.proto, name),
-                            lambda self, val, name=field.name: setattr(self.proto, name, val),
-                            lambda self, name=field.name: delattr(self.proto, name))
-            setattr(type(self), field.name, prop)
+        for field in self.Proto.DESCRIPTOR.fields_by_name.iterkeys():
+            prop = property(lambda self, name=field: getattr(self.proto, name),
+                            lambda self, val, name=field: setattr(self.proto, name, val),
+                            lambda self, name=field: delattr(self.proto, name))
+            setattr(type(self), field, prop)
         for enum in self.Proto.DESCRIPTOR.enum_types:
             for value in enum.values:
                 setattr(type(self), value.name, value.number)
+        for oneof in self.Proto.DESCRIPTOR.oneofs_by_name.iterkeys():
+            prop = property(lambda self, name=oneof: getattr(self.proto, name),
+                            lambda self, val, name=oneof: setattr(self.proto, oneof, val),
+                            lambda self, name=oneof: delattr(self.proto, name))
+            setattr(type(self), oneof, prop)
 
 
 class ChronosMeta(type):
@@ -200,9 +229,8 @@ class AggregateMeta(ChronosMeta):
     @code
 
     class AnIndex(ChronosIndex):
-        firmName = Column(String)
-        infoSysName = Column(String)
-        constraints = [UniqueConstraint('firmName', 'infoSysName', name='ux_1')]
+        attributes = ('firmName', 'infoSysName')
+        constraints = (Unique('firmName', 'infoSysName', name='ux_1'))
 
     class AnAggregate(Aggregate):
         Proto = AProtobufMessage
@@ -220,24 +248,32 @@ class AggregateMeta(ChronosMeta):
         sys.modules[cls.__module__].AggregateRegistry = {}
         cls.Dependencies = set() #pylint: disable=C0103
         cls.IndexedAttributes = set() #pylint: disable=C0103
+        cls.Constraints = set() #pylint: disable=C0103
         if hasattr(cls, 'Index'):
             AggregateMeta._setupIndex(cls)
-        if not isinstance(cls.Expiration, int):
-            raise ChronosSemanticException('Aggregate.Expiration must be an int')
-        if cls.Expiration < 0:
-            raise ChronosSemanticException('Aggregate.Expiration cannot be negative')
+        else:
+            EventLogger.LogErrorAuto(cls, 'Aggregate does not have an Index', tags={'Aggregate': name})
 
     @staticmethod
     def _setupIndex(kls):
         if not issubclass(kls.Index, ChronosIndex):
             raise ChronosSemanticException('Invalid Index: {0} is not a subclass of ChronosIndex'.format(kls.Index.__name__))
         for indexedAttribute in kls.Index.IndexedAttributes:
-            if not hasattr(kls.Proto, indexedAttribute):
+            if not indexedAttribute in kls.Proto.DESCRIPTOR.fields_by_name:
                 raise ChronosSemanticException('Invalid Index property: {0}'.format(indexedAttribute))
         kls.IndexedAttributes = kls.Index.IndexedAttributes
+        kls.Constraints = AggregateMeta._ensureUnique(kls.Index.Constraints)
+        kls.NoCaseAttributes = kls.Index.NoCaseAttributes
         kls.IndexStringFormat = '.'.join(sorted('{' + attr + '}' for attr in kls.IndexedAttributes))
         if kls.IndexStringFormat:
             kls.IndexStringFormat = '.' + kls.IndexStringFormat
+
+    @staticmethod
+    def _ensureUnique(constraints):
+        names = set([constraint.name for constraint in constraints])
+        if len(names) != len(constraints):
+            raise ChronosSemanticException('Violation of unique constraint name. Found duplicated name in the list of constraint names :{}.'.format(names))
+        return constraints
 
 
 class EventMeta(ChronosMeta):
@@ -271,41 +307,43 @@ class Aggregate(ChronosBase):
     so that the client can subclass a single class in their code."""
     __metaclass__ = AggregateMeta
     CacheSize = 1000
-    Expiration = 0
-    def __init__(self, aggregateId, version, expiration):
+    def __init__(self, aggregateId, version):
         super(Aggregate, self).__init__()
         self.aggregateId = aggregateId
         self.version = version
-        self.expiration = expiration
         self.lock = threading.Lock()
 
     def IsValid(self):
         raise NotImplementedError('IsValid')
 
-    def _getAttributeForIndexing(self, attr):
-        if not self.proto.HasField(attr):
-            return None
-        return str(getattr(self, attr))
+    def _getAttributeForIndexing(self, attribute):
+        value = str(getattr(self, attribute))
+        if attribute in self.NoCaseAttributes:  #pylint: disable=E1101
+            value = value.lower()
+        return value
 
     def GetIndices(self):
-        return dict([(attr, self._getAttributeForIndexing(attr)) for attr in self.IndexedAttributes]) #pylint: disable=E1101
+        return {attribute: self._getAttributeForIndexing(attribute) for attribute in self.IndexedAttributes} #pylint: disable=E1101
 
     def HasDivergedFrom(self, previousVersion):
         return self.GetIndices() != previousVersion.GetIndices()
 
     def ToDict(self):
+        return {'aggregateId': self.aggregateId, 'version': self.version, 'proto': self.proto.SerializeToString()}
+
+    def ToRESTDict(self):
         return {'aggregateId': self.aggregateId, 'version': self.version,
-                'expiration': self.expiration, 'proto': self.proto.SerializeToString()}
+                'proto':  json.loads(json_format.MessageToJson(self.proto, including_default_value_fields=True))}
 
     @classmethod
     def FromDict(cls, dct):
-        aggregate = cls(long(dct['aggregateId']), long(dct['version']), long(dct['expiration']))
+        aggregate = cls(long(dct['aggregateId']), long(dct['version']))
         aggregate.proto.ParseFromString(dct['proto'])
 
         return aggregate
 
     def __deepcopy__(self, memo):
-        result = type(self)(self.aggregateId, self.version, self.expiration)
+        result = type(self)(self.aggregateId, self.version)
         result.proto = copy.deepcopy(self.proto, memo)
         return result
 
@@ -330,305 +368,24 @@ class Event(ChronosBase):
 
     def ToProto(self, receivedTimestamp, processedTimestamp):
         #pylint: disable=E1101
-        proto = EventProto()
-        proto.type = self.fullName
-        proto.version = self.version
-        proto.logicVersion = self.logicVersion
-        proto.proto = self.proto.SerializeToString()
-        proto.receivedTimestamp = receivedTimestamp
-        proto.processedTimestamp = processedTimestamp
-
-        return proto
+        return EventProto(type=self.fullName, version=self.version, logicVersion=self.logicVersion, proto=self.proto.SerializeToString(),
+                          receivedTimestamp=receivedTimestamp, processedTimestamp=processedTimestamp)
 
     @staticmethod
-    def FromProtoString(string):
-        proto = EventProto()
-        proto.ParseFromString(string)
-
-        return proto
-
-class SqliteIndex(object):
-    """Abstracts away the details of the sqlite index implementation.
-    This class mainly exists to provide the same transactional interface provided by
-    AggregateRepository and EventProcessor.
-    """
-    def __init__(self, sqliteSession):
-        self.sqliteSession = sqliteSession
-
-    def Begin(self):
-        self.sqliteSession.begin_nested()
-
-    def Commit(self):
-        self.sqliteSession.commit()
-
-    def Rollback(self):
-        self.sqliteSession.rollback()
-
-    def Close(self):
-        self.sqliteSession.close()
-
-    def Add(self, obj):
-        self.sqliteSession.add(obj)
-
-    def Flush(self):
-        self.sqliteSession.flush()
-
-class IndexStore(object):
-    """Handles all interaction relating to Chronos indexing functionality.
-    The IndexStore interfaces with sqlite databases instances that are persisted on disk as part
-    of the Chronos running configuration. In production, these databases (and the entire Chronos running configuration)
-    are persisted on network storage (the Nimble device, currently) in case of individual server failure.
-
-    Instances of this class are not thread-safe."""
-    SchemaLock = Lock()
-    SQLitePathTemplate = 'sqlite:////var/lib/chronos/index.alembic/db/{0}.sqlite'
-    def __init__(self, aggregateClass):
-        self.aggregateClass = aggregateClass
-        self.indexClass = aggregateClass.Index
-        self.tagClass = self.indexClass.CreateTagModel()
-        self.checkpointClass = self.indexClass.CreateCheckpointModel()
-        self.sqlitePath = self.SQLitePathTemplate.format(self.aggregateClass.__name__)
-        self.engine = self._getEngine()
-        self.readEngine = create_engine(self.sqlitePath)
-        self.sessionMaker = sessionmaker(bind=self.engine)
-        self.readSessionMaker = sessionmaker(bind=self.readEngine)
-
-    def Dispose(self):
-        self.sessionMaker.close_all()
-        self.readSessionMaker.close_all()
-        self.engine.dispose()
-        self.readEngine.dispose()
-
-    def _getEngine(self):
-        engine = create_engine(self.sqlitePath)
-        @event.listens_for(engine, "connect")
-        def DoConnect(connection, _): #pylint: disable=W0612
-            connection.isolation_level = None
-        @event.listens_for(engine, "begin")
-        def DoBegin(connection): #pylint: disable=W0612
-            connection.execute("BEGIN")
-        return engine
-
-    def GetSession(self):
-        return SqliteIndex(self.sessionMaker())
-
-    def _getReadSession(self):
-        return self.readSessionMaker()
-
-    def GetCheckpoint(self, session):
-        """Retrieves the current checkpoint information from the SQLite instance.
-        @param session A SqliteIndex instance that will be used to retrieve the checkpoint.
-        @returns None If no checkpoint information has been persisted."""
-        checkpoint = session.sqliteSession.query(self.checkpointClass).get(1)
-        return checkpoint
-
-    def UpdateCheckpoint(self, maxRequestId, session):
-        """Persists the provided maxRequestId into the SQLite instance's checkpoint.
-        @param maxRequestId The maximum requestId that has been persisted to Redis.
-        @param session The SqliteIndex instance that should be used for the operation."""
-        checkpoint = session.sqliteSession.query(self.checkpointClass).get(1)
-        if checkpoint is None:
-            checkpoint = self.checkpointClass()
-        checkpoint.maxRequestId = maxRequestId
-        session.Add(checkpoint)
-        session.Flush()
-
-    def ReindexAggregate(self, aggregate, session):
-        """Upserts the provided aggregate's information into the underlying sqlite database.
-        @param aggregate The aggregate instance that should be reindexed.
-        @param session The SqliteIndex instance that should be used for the operation."""
-        if not self.aggregateClass.IndexedAttributes:
-            return
-
-        indices = aggregate.GetIndices()
-        index = session.sqliteSession.query(self.indexClass).get(aggregate.aggregateId)
-        if index is None:
-            index = self.indexClass(aggregateId=aggregate.aggregateId, **indices)
-        else:
-            for attr, value in indices.iteritems():
-                setattr(index, attr, value)
-        session.Add(index)
-        session.Flush()
-
-    def IndexTag(self, tag, aggregateId, session):
-        """Persists the provided tag information to the SQLite instance.
-        @param tag The tag to be indexed. This must be unique within the context of the Aggregate instance.
-        @param session The SqliteIndex instance that should be used for the operation."""
-        date = long(time.time() * 1e9)
-        tagModel = self.tagClass(tag=tag, aggregateId=int(aggregateId), createDate=date)
-        session.Add(tagModel)
-        session.Flush()
-        return date
-
-    def GetIndexRow(self, aggregateId):
-        session = self._getReadSession()
-        row = session.query(self.indexClass).get(aggregateId)
-        session.close()
-        return row
-
-    def GetTagRow(self, aggregateId, tag):
-        session = self._getReadSession()
-        row = session.query(self.tagClass).filter_by(aggregateId=aggregateId, tag=tag).one_or_none()
-        session.close()
-        return row
-
-    def GetTagsByAggregateId(self, aggregateId):
-        session = self._getReadSession()
-        query = session.query(self.tagClass).filter_by(aggregateId=aggregateId).all()
-        session.close()
-        return query
-
-    def GetAllTags(self):
-        session = self._getReadSession()
-        query = session.query(self.tagClass).all()
-        session.close()
-        return query
-
-    def MarkTagsAsArchived(self, tags):
-        """Updates the provided tags to mark them as archived (no longer available via Redis).
-        @param tags A list of tags to be marked. If any tag provided does not have a corresponding row
-        in the database, one will be created for it."""
-        databaseSession = self.GetSession()
-        for tagName, tag in tags:
-            tagRow = databaseSession.sqliteSession.query(self.tagClass).filter_by(tag=tagName, aggregateId=tag['aggregateId']).one()
-            if tagRow is None:
-                EventLogger.LogWarningAuto(self, 'Creating index for tag', 'Attempted to mark unknown tag as archived',
-                                           tags={'Aggregate': self.aggregateClass.__name__, 'Tag': tagName})
-                tagRow = self.tagClass(tag=tagName, aggregateId=tag['aggregateId'], createDate=tag['createDate'])
-            tagRow.isArchived = True
-            databaseSession.Add(tagRow)
-        databaseSession.Commit()
-        databaseSession.Close()
-
-    def MarkAsArchived(self, aggregateIds):
-        """Updates the provided aggregate to mark it as archived.
-        This action doesn't alter any index attributes, but signifies that the aggregate's information
-        is now stored in a SQL Server instance rather than in Redis.
-        @param aggregateIds A list of aggregateIds to be marked. If any aggregateId provided does not have a corresponding
-        row in the database, a warning will be logged and that single operation will be skipped."""
-        databaseSession = self.GetSession()
-        for aggregateId in aggregateIds:
-            aggregateId = long(aggregateId)
-            aggregate = databaseSession.sqliteSession.query(self.indexClass).get(aggregateId)
-            if aggregate is None:
-                EventLogger.LogWarningAuto(self, 'Attempted to mark unknown aggregate as archived',
-                                           tags={'Aggregate': self.aggregateClass.__name__, 'AggregateId': aggregateId})
-                continue
-            aggregate.isArchived = True
-            databaseSession.Add(aggregate)
-        databaseSession.Commit()
-        databaseSession.Close()
-
-    def UpdateMaxArchivedVersion(self, aggregateId, maxVersion):
-        """Updates the provided aggregate with its maximum archived version.
-        This action doesn't alter any index attributes, but signifies that the aggregate's event
-        information is now stored in a SQL Server instance rather than in Redis.
-        @param aggregateId The aggregateId of the instance which has archived events.
-        @param maxVersion The maximum event version that has been removed from Redis."""
-        databaseSession = self.GetSession()
-        aggregateId = long(aggregateId)
-        aggregate = databaseSession.sqliteSession.query(self.indexClass).get(aggregateId)
-        aggregate.maxArchivedVersion = maxVersion
-        databaseSession.Add(aggregate)
-        databaseSession.Commit()
-        databaseSession.Close()
-
-    def RetrieveAggregateIds(self, isArchived=False, **indices):
-        """Returns a list of all aggregateIds that satisfy the provided index properties.
-        This method will raise an Exception if a non-indexed property is supplied as a keyword argument.
-        @param isArchived A flag indicating whether archived or live instances should be searched.
-        @param indices Kwargs representing the indexed values that should be used in the lookup.
-        @throws ChronosCoreException If the Aggregate is not indexed."""
-        if not self.aggregateClass.IndexedAttributes:
-            raise ChronosCoreException('Aggregate {0} is not indexed'.format(self.aggregateClass.__name__))
-        session = self._getReadSession()
-        query = session.query(self.indexClass).filter_by(**indices)
-        if isArchived is not None:
-            query = query.filter_by(isArchived=isArchived)
-        session.close()
-        return [row.aggregateId for row in query]
-
-    def RetrieveAggregates(self, fromAggregateId, returnCount, isArchived=False, **indices):
-        """Returns a list of all aggregates and their index properties that satisfy the provided index properties.
-        This method will raise an Exception if a non-indexed property is supplied as a keyword argument.
-        @param isArchived A flag indicating whether archived or live instances should be searched.
-        @param indices Kwargs representing the indexed values that should be used in the lookup.
-        @throws ChronosCoreException If the Aggregate is not indexed."""
-        if not self.aggregateClass.IndexedAttributes:
-            raise ChronosCoreException('Aggregate {0} is not indexed'.format(self.aggregateClass.__name__))
-        session = self._getReadSession()
-        query = session.query(self.indexClass).filter_by(**indices)
-        if fromAggregateId is not None:
-            query = query.filter(self.indexClass.aggregateId <= fromAggregateId)
-        if isArchived is not None:
-            query = query.filter_by(isArchived=isArchived)
-        if returnCount is not None:
-            query = query.limit(returnCount)
-        session.close()
-        return [aggregate for aggregate in query]
-
-    @staticmethod
-    def UpdateIndexSchema(aggregateClass):
-        """Executes an external procedure that updates the underlying sqlite database using an on-disk alembic configuration.
-        This method relies on the Chronos running configuration being properly configured.
-        @param aggregateClass The Aggregate subclass that should have its new schema applied to its SQLite instance."""
-        if not hasattr(aggregateClass, 'Index'):
-            raise ChronosCoreException('Aggregate class must define index')
-        env = os.environ.copy()
-        env['AGGREGATE_NAME'] = aggregateClass.__name__
-        with IndexStore.SchemaLock:
-            process = subprocess.Popen(['/var/lib/chronos/run_migration'], env=env, cwd='/var/lib/chronos',
-                                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = process.communicate()
-            if process.returncode:
-                EventLogger.LogError('Chronos.Core', 'IndexStore', 'UpdateIndexSchema', 'Error updating index schema',
-                                     'External process had non-zero return code',
-                                     tags={'Stdout': stdout, 'Stderr': stderr, 'ReturnCode': process.returncode,
-                                           'Aggregate': aggregateClass.__name__})
-                raise ChronosCoreException('Unable to update index schema')
-
-    @staticmethod
-    def GetIndexStore(aggregateName, eventStore, logicCompiler):
-        aggregateLogic = eventStore.GetLatestAggregateLogicByName(aggregateName)
-        module = logicCompiler.BuildModule(aggregateName, aggregateLogic)
-        return IndexStore(module.AggregateClass)
-
-class ChronosCoreProvider(object):
-    """A factory class that provides implementations of core Chronos functionality
-    to other modules.
-
-    @see Chronos::Gateway"""
-    def __init__(self, aggregateClass):
-        self.infrastructureProvider = InfrastructureProvider()
-        self.indexStore = IndexStore(aggregateClass)
-        self.eventStore = self.infrastructureProvider.GetConfigurablePlugin(ConfigurablePlugin.EventStore)
-        self.aggregateRepository = AggregateRepository(aggregateClass, self.indexStore, self.eventStore)
-        self.eventProcessor = EventProcessor(self.eventStore, AggregateLogicCompiler(self.eventStore))
-
-    def Dispose(self):
-        self.indexStore.Dispose()
-        self.eventStore.Dispose()
-
-    def GetIndexStore(self):
-        return self.indexStore
-
-    def GetRepository(self):
-        return self.aggregateRepository
-
-    def GetProcessor(self):
-        return self.eventProcessor
+    def CreateInstance(eventType, eventVersion, logicVersion, proto, receivedTimestamp, processedTimestamp):
+        return EventProto(type=eventType, version=eventVersion, logicVersion=logicVersion, proto=str(proto),
+                          receivedTimestamp=receivedTimestamp, processedTimestamp=processedTimestamp)
 
 
 class AggregateRepository(object):
     """The in-memory representation of the current state of all aggregates within an
     aggregate root. AggregateRepository handles interaction with an event store
     to return aggregates to the user."""
-    def __init__(self, aggregateClass, indexStore, eventStore):
+    def __init__(self, aggregateClass, eventReader):
         if not issubclass(aggregateClass, Aggregate):
             raise ChronosCoreException('aggregateClass must subclass Aggregate')
         self.aggregateClass = aggregateClass
-        self.indexStore = indexStore
-        self.eventStore = eventStore
+        self.eventReader = eventReader
         self.repository = LRUEvictingMap(capacity=aggregateClass.CacheSize)
         self.transactionRepository = None
         self.transactionLock = threading.Lock()
@@ -664,11 +421,8 @@ class AggregateRepository(object):
         """Creates a new uninitialized aggregate, permanently incrementing the aggregate root id
         in the event store. This method does not actually add the aggregate into the repository;
         the aggregate should be emplaced into the repository once the creation event is applied."""
-        aggregateId = self.eventStore.GetAndIncrementAggregateId(self.aggregateClass)
-        expiration = 0
-        if self.aggregateClass.Expiration:
-            expiration = long(time.time() * 1e9) + long(self.aggregateClass.Expiration * 1e9)
-        aggregate = self.aggregateClass(aggregateId, long(1), expiration)
+        aggregateId = self.eventReader.GetNextAggregateId()
+        aggregate = self.aggregateClass(aggregateId, long(1))
 
         return aggregate
 
@@ -709,27 +463,95 @@ class AggregateRepository(object):
                 self.repository[aggregate.aggregateId] = aggregate
 
     def _getAggregateSnapshot(self, aggregateId):
-        aggregate = self.eventStore.TryGetSnapshot(self.aggregateClass, aggregateId)
+        aggregate = self.eventReader.TryGetSnapshot(aggregateId)
         if aggregate is None:
             raise ChronosCoreException('Unknown aggregateId {0} for {1}'.format(aggregateId, self.aggregateClass.fullName))
         self.repository[aggregateId] = aggregate
         return aggregate
 
     def GetEventPersistenceCheckpoint(self):
-        return self.eventStore.GetEventPersistenceCheckpoint(self.aggregateClass)
+        return self.eventReader.GetEventPersistenceCheckpoint()
+
+    def GetStagedEvents(self):
+        return self.eventReader.GetStagedEvents()
 
     def GetAll(self):
         """Retrieves all aggregate snapshots available in the event store and returns
         them. This does not affect the current in-memory representation."""
-        return self.eventStore.GetAllSnapshots(self.aggregateClass)
+        return self.eventReader.GetAllSnapshots()
 
-    def GetFromIndex(self, **kwargs):
+    def GetFromIndex(self, indexKeys):
         """Retrieves all aggregates that satisfy the provided index contraints."""
-        aggregateIds = self.indexStore.RetrieveAggregateIds(**kwargs)
-        return self.eventStore.GetIndexedSnapshots(self.aggregateClass, aggregateIds)
+        return self.eventReader.GetIndexedSnapshots(indexKeys)
 
     def GetTag(self, aggregateId, tag):
-        return self.eventStore.GetTag(self.aggregateClass, aggregateId, tag)
+        return self.eventReader.TryGetTag(aggregateId, tag)
+
+
+class ConstraintEncoder(json.JSONEncoder):
+    def default(self, obj): #pylint: disable=E0202
+        if isinstance(obj, (list, dict, str, unicode, int, float, bool, type(None))):
+            return json.JSONEncoder.default(self, obj)
+        return {'_python_object': pickle.dumps(obj)}
+
+    @staticmethod
+    def as_python_object(dct): #pylint: disable=C0103
+        if '_python_object' in dct:
+            return pickle.loads(str(dct['_python_object']))
+        return dct
+
+
+class ConstraintSerializer(object):
+    def __init__(self):
+        self.encoder = ConstraintEncoder()
+
+    def Deserialize(self, constraints):
+        if constraints is not None:
+            return json.loads(constraints, object_hook=self.encoder.as_python_object)
+
+    @staticmethod
+    def Serialize(constraints):
+        if constraints is None or len(constraints) == 0:
+            return None
+        return json.dumps(constraints, cls=ConstraintEncoder)
+
+
+IndexDivergence = namedtuple('IndexDivergence', ['constraintsToAdd', 'constraintsToRemove'])
+
+class ConstraintComparer(object):
+    """A Utility class that is responsible for the comparison and updating of constraints and indices necessary when registering new logic."""
+    def __init__(self, newConstraints, oldConstraints, serializedNewConstraints, serializedOldConstraints):
+        self.newConstraints = newConstraints
+        self.oldConstraints = oldConstraints
+        self.serializedNewConstraints = serializedNewConstraints
+        self.serializedOldConstraints = serializedOldConstraints
+
+    def UpdateConstraints(self):
+        if (self.oldConstraints is None and self.newConstraints is None) or self.serializedOldConstraints == self.serializedNewConstraints:
+            return IndexDivergence([], [])
+        elif self.oldConstraints is None or len(self.oldConstraints) == 0:
+            return IndexDivergence(self.newConstraints, [])
+        elif self.newConstraints is None or len(self.newConstraints) == 0:
+            return IndexDivergence([], self.oldConstraints)
+        else:
+            return self._handleConstraintDivergence(self.oldConstraints, self.newConstraints)
+
+    @staticmethod
+    def _handleConstraintDivergence(oldConstraints, newConstraints):
+        old = {constraint.name: constraint for constraint in oldConstraints}
+        new = {constraint.name: constraint for constraint in newConstraints}
+        newKeys = set(new.iterkeys())
+        oldKeys = set(old.iterkeys())
+        intersectKeys = newKeys.intersection(oldKeys)
+        added = newKeys - oldKeys
+        removed = oldKeys - newKeys
+        modified = set(x for x in intersectKeys if new[x] != old[x])
+
+        constraintNamesToAdd = added.union(modified)
+        constraintsToAdd = [new[name] for name in constraintNamesToAdd]
+        constraintNamesToRemove = modified.union(removed)
+        constraintsToRemove = [old[name] for name in constraintNamesToRemove]
+        return IndexDivergence(constraintsToAdd, constraintsToRemove)
 
 
 class AggregateLogicCompiler(object):
@@ -738,8 +560,8 @@ class AggregateLogicCompiler(object):
        In addition, this class handles the persistence of logic versions and ids so that
        events from the past can be replayed without worrying about backwards compatibility
        while making changes."""
-    def __init__(self, eventStore):
-        self.eventStore = eventStore
+    def __init__(self, logicStore):
+        self.logicStore = logicStore
 
     def BuildModule(self, aggregateName, aggregateLogic):
         """Constructs a module containing the provided aggregateLogic, wired to the
@@ -749,35 +571,34 @@ class AggregateLogicCompiler(object):
         self.ImportAggregateLogic('{0}_pb2'.format(aggregateName))
         return self.ImportAggregateLogic(aggregateName)
 
-    def Compile(self, aggregateName, aggregateLogic):
+    def Compile(self, aggregateClassId, aggregateName, aggregateLogic):
         """Handles compilation and persistence of Aggregate logic.
         If the provided aggregateLogic differs from the previously compiled
         logic (or no previously provided logic could be found), the logic
         will be persisted and the version incremented."""
         module = self.BuildModule(aggregateName, aggregateLogic)
-        logicVersion = self._getLogicVersionWithPersistence(module.AggregateClass, aggregateLogic)
+        logicMetadata = self._getLogicMetadataWithPersistence(aggregateClassId, aggregateName, aggregateLogic, module)
+        return logicMetadata, module
 
-        return logicVersion, module
-
-    def _getLogicVersionWithPersistence(self, aggregateClass, aggregateLogic):
-        currentLogicDict = self.eventStore.GetLatestAggregateLogic(aggregateClass)
-        if currentLogicDict is not None:
-            currentLogicVersion, currentLogic = currentLogicDict.items()[0]
-        if currentLogicDict is None or (currentLogic.pythonFileContents != aggregateLogic.pythonFileContents
-                                        or currentLogic.protoFileContents != aggregateLogic.protoFileContents):
-            IndexStore.UpdateIndexSchema(aggregateClass)
-            if currentLogicDict is None:
-                message = 'No existing logic found' #pylint: disable=W0621
-            else:
-                message = 'Registered logic and existing logic differ'
-
-            EventLogger.LogInformationAuto(self, 'Persisting aggregate logic', message,
-                                           tags={'Aggregate': aggregateClass.__name__})
-            return self.eventStore.PersistAggregateLogic(aggregateClass, aggregateLogic)
+    def _getLogicMetadataWithPersistence(self, aggregateClassId, aggregateName, aggregateLogic, module):
+        currentLogicTuple = self.logicStore.GetLatestAggregateLogic(aggregateName)
+        if currentLogicTuple is None:
+            EventLogger.LogInformationAuto(self, 'Persisting aggregate logic', 'No existing logic found',
+                                           tags={'Aggregate': aggregateName})
+            # Set logicVersion to 1 since it is the first one
+            logicMetadata = self.logicStore.PersistAggregateLogic(aggregateClassId, aggregateName, 1, aggregateLogic, module)
+            return logicMetadata
+        logicMetadata, currentLogic = currentLogicTuple
+        if currentLogic.pythonFileContents != aggregateLogic.pythonFileContents or currentLogic.protoFileContents != aggregateLogic.protoFileContents:
+            EventLogger.LogInformationAuto(self, 'Persisting aggregate logic', 'Registered logic and existing logic differ',
+                                           tags={'Aggregate': aggregateName})
+            logicMetadata = self.logicStore.PersistAggregateLogic(aggregateClassId, aggregateName, logicMetadata.logicVersion + 1, aggregateLogic, module)
+            return logicMetadata
         else:
             EventLogger.LogInformationAuto(self, 'Existing aggregate logic found',
-                                           tags={'LogicVersion': currentLogicVersion})
-            return currentLogicVersion
+                                           tags={'LogicVersion': logicMetadata.logicVersion,
+                                                 'LogicId': logicMetadata.logicId})
+            return logicMetadata
 
     @staticmethod
     def _writeFilesForRegistration(aggregateName, aggregateLogic):
@@ -807,30 +628,111 @@ class AggregateLogicCompiler(object):
     def ImportAggregateLogic(aggregateName):
         impfile = None
         try:
-            impfile, pathname, desc = imp.find_module(aggregateName)
-            return imp.load_module(aggregateName, impfile, pathname, desc)
+            impfile, pathname, description = imp.find_module(aggregateName)
+            return imp.load_module(aggregateName, impfile, pathname, description)
         finally:
             if impfile:
                 impfile.close()
 
-class NoEventsFound(Exception):
-    pass
 
-def SerializeBufferItem(bufferItem):
-    return bufferItem.Serialize()
+class BufferItem(object):
+    __metaclass__ = ABCMeta
+    def __init__(self):
+        self.serializationResult = None
+
+    @abstractmethod
+    def Serialize(self):
+        pass
+
+SuccessSerializationResult = namedtuple('SuccessSerializationResult', ['serializedResponse', 'eventProto', 'aggregateDict',
+                                                                       'aggregate', 'requestId'])
+class PersistenceBufferItem(BufferItem):
+    def __init__(self, request, aggregate, logicId, singleEvent, receivedTimestamp, processedTimestamp):
+        super(PersistenceBufferItem, self).__init__()
+        self.request = request
+        self.aggregate = aggregate
+        self.logicId = logicId
+        self.event = singleEvent
+        self.receivedTimestamp = receivedTimestamp
+        self.processedTimestamp = processedTimestamp
+
+    def Serialize(self):
+        eventProto = self.event.ToProto(self.receivedTimestamp, self.processedTimestamp)
+        aggregateDict = self.aggregate.ToDict()
+        aggregateDict['logicId'] = self.logicId
+        response = ChronosResponse(responseCode=ChronosResponse.SUCCESS, requestId=self.request.requestId, #pylint: disable=E1101
+                                   senderId=self.request.senderId)
+        response.eventProto.CopyFrom(eventProto) #pylint: disable=E1101
+        response.aggregateProto.aggregateId = self.aggregate.aggregateId #pylint: disable=E1101
+        response.aggregateProto.proto = aggregateDict['proto'] #pylint: disable=E1101
+        response.aggregateProto.version = self.aggregate.version #pylint: disable=E1101
+        return SuccessSerializationResult(response.SerializeToString(), eventProto, aggregateDict, self.aggregate, self.request.requestId)
+
+
+FailureSerializationResult = namedtuple('FailureSerializationResult', ['serializedResponse'])
+class PersistenceBufferFailureItem(BufferItem):
+    def __init__(self, aggregateClass, request, exception):
+        super(PersistenceBufferFailureItem, self).__init__()
+        self.aggregateClass = aggregateClass
+        self.request = request
+        self.exception = exception
+
+    def Serialize(self):
+        response = ChronosResponse(responseCode=ChronosResponse.FAILURE, responseMessage=str(self.exception), #pylint: disable=E1101
+                                   requestId=self.request.requestId,
+                                   senderId=self.request.senderId)
+        response.aggregateProto.aggregateId = self.request.aggregateId #pylint: disable=E1101
+        response.eventProto.type = '{0}.{1}'.format(self.aggregateClass.__name__, self.request.eventType) #pylint: disable=E1101
+        response.eventProto.proto = self.request.eventProto #pylint: disable=E1101
+        response.eventProto.receivedTimestamp = self.request.receivedTimestamp #pylint: disable=E1101
+        response.eventProto.processedTimestamp = long(time.time() * 1e9) #pylint: disable=E1101
+
+        if hasattr(self.exception, 'tags') and isinstance(self.exception.tags, dict):
+            for key, value in self.exception.tags.iteritems():
+                response.additionalInformation.add(key=key, value=str(value)) #pylint: disable=E1101
+
+        return FailureSerializationResult(response.SerializeToString())
+
+
+ManagementSerializationResult = namedtuple('ManagementSerializationResult', ['serializedNotification'])
+class PersistenceBufferManagementItem(BufferItem):
+    def __init__(self, managementNotification):
+        super(PersistenceBufferManagementItem, self).__init__()
+        self.managementNotification = managementNotification
+
+    def Serialize(self):
+        return ManagementSerializationResult(self.managementNotification.SerializeToString())
+
+
+TagSerializationResult = namedtuple('TagSerializationResult', ['tag', 'aggregateDict'])
+class PersistenceBufferTagItem(BufferItem):
+    def __init__(self, aggregate, logicId, tag, createDate):
+        super(PersistenceBufferTagItem, self).__init__()
+        self.aggregate = aggregate
+        self.logicId = logicId
+        self.tag = tag
+        self.createDate = createDate
+
+    def Serialize(self):
+        aggregateDict = self.aggregate.ToDict()
+        aggregateDict['createDate'] = self.createDate
+        aggregateDict['logicId'] = self.logicId
+        return TagSerializationResult(self.tag, aggregateDict)
+
 
 class EventProcessor(object):
     """Handles processing and replay of events against aggregate instances.
     This class is thread-safe."""
     MaxBufferedEvents = 15
-    def __init__(self, eventStore, logicCompiler):
-        self.eventStore = eventStore
-        self.logicCompiler = logicCompiler
+    def __init__(self, aggregateClass, eventPersister):
+        self.aggregateClass = aggregateClass
+        self.eventPersister = eventPersister
         self.persistenceBuffer = []
-        self.persistencePool = Pool(processes=4) # TODO(jkaye): Is this a good number?
+        self.aggregateSnapshotBuffer = []
+        self.aggregateSnapshotTransactionBuffer = []
         self.lock = threading.RLock()
-        self.isReplaying = False
         self.transactionBuffer = None
+        self.lostConnection = False
 
     def _isTransactionInProgress(self):
         return self.transactionBuffer is not None
@@ -838,21 +740,42 @@ class EventProcessor(object):
     def Begin(self):
         if self._isTransactionInProgress():
             return
+        try:
+            self.CreateTransactionSavepoint()
+        except ChronosFailedEventPersistenceException:
+            # On the loss of connection, the backend will continually attempt to reconnect and only upon it successfully reconnecting will it return. Therefore,
+            # the lostConnection flag below is not intended to indicate the current state of connection just the fact that connection was lost at some point during the
+            # process.
+            self.lostConnection = True
+            self.Begin()
         self.transactionBuffer = []
+
+    def CreateTransactionSavepoint(self):
+        self.eventPersister.Begin()
 
     def Commit(self):
         if not self._isTransactionInProgress():
             return
-        results = [self.persistencePool.apply_async(func=SerializeBufferItem, args=(item,)) for item in self.transactionBuffer]
-        self.persistenceBuffer.extend(results)
-        self.transactionBuffer = None
+        for item in self.transactionBuffer:
+            serializedItem = item.Serialize()
+            self.persistenceBuffer.append(serializedItem)
+        try:
+            self.transactionBuffer = None
+            self.eventPersister.Commit()
+            self.aggregateSnapshotBuffer.extend(self.aggregateSnapshotTransactionBuffer)
+            self.aggregateSnapshotTransactionBuffer = []
+        except ChronosFailedEventPersistenceException:
+            self.lostConnection = True
 
     def Rollback(self):
+        self.eventPersister.RollbackNotifier()
         if not self._isTransactionInProgress():
             return
+        self.eventPersister.Rollback()
+        self.aggregateSnapshotTransactionBuffer = []
         self.transactionBuffer = None
 
-    def Process(self, request, aggregate, singleEvent):
+    def Process(self, request, aggregate, logicId, singleEvent):
         """Applies the provided event to the provided aggregate. If the EventProcessor
         is not replaying, the action will be persisted in the event store and all
         subscribed clients will be notified of the event."""
@@ -862,117 +785,68 @@ class EventProcessor(object):
         with self.lock:
             singleEvent.RaiseFor(aggregate)
             aggregate.version += 1
-            if not aggregate.IsValid() and not self.isReplaying:
+            if not aggregate.IsValid():
                 EventLogger.LogWarningAuto(self, 'Aborting event processing', 'Aggregate.IsValid returned false',
                                            tags={'RequestId': request.requestId, 'AggregateId': aggregate.aggregateId})
                 raise ChronosCoreException('Aggregate was put into an invalid state')
-            if self.isReplaying:
-                bufferItem = None
-            else:
-                bufferItem = PersistenceBufferItem(aggregate.__class__, request, aggregate, singleEvent,
-                                                   request.receivedTimestamp, long(time.time() * 1e9))
+            bufferItem = PersistenceBufferItem(request, aggregate, logicId, singleEvent, request.receivedTimestamp, long(time.time() * 1e9))
             return aggregate, bufferItem
 
     def _internalPersist(self, bufferItem):
         if self._isTransactionInProgress():
             self.transactionBuffer.append(bufferItem)
         else:
-            result = self.persistencePool.apply_async(func=SerializeBufferItem, args=(bufferItem,))
-            self.persistenceBuffer.append(result)
+            self.persistenceBuffer.append(bufferItem.Serialize())
 
-    def ProcessIndexDivergence(self, aggregateClass, aggregateId):
+    def TryVerifyEventPersistenceCheckpoint(self):
+        self.eventPersister.TryVerifyEventPersistenceCheckpoint()
+
+    def UpsertAggregateSnapshot(self, aggregate):
+        try:
+            if self.lostConnection:
+                self._ensureAggregateSnapshotConsistency()
+            self.eventPersister.UpsertAggregateSnapshot(aggregate)
+        except ChronosFailedEventPersistenceException:
+            self.lostConnection = True
+            self.CreateTransactionSavepoint()
+            self.UpsertAggregateSnapshot(aggregate)
+
+        if self._isTransactionInProgress():
+            self.aggregateSnapshotTransactionBuffer.append(aggregate)
+        else:
+            self.aggregateSnapshotBuffer.append(aggregate)
+
+    def _ensureAggregateSnapshotConsistency(self):
+        for aggregate in self.aggregateSnapshotTransactionBuffer:
+            self.eventPersister.UpsertAggregateSnapshot(aggregate)
+        for aggregate in self.aggregateSnapshotBuffer:
+            self.eventPersister.UpsertAggregateSnapshot(aggregate)
+        self.lostConnection = False
+
+    def ProcessIndexDivergence(self, aggregateId):
         """Notifies clients that an aggregate instance has diverged indices."""
         managementNotification = ChronosManagementNotification(notificationType=ChronosManagementNotification.INDEX_DIVERGED, #pylint: disable=E1101
                                                                aggregateId=aggregateId)
-        bufferItem = PersistenceBufferManagementItem(aggregateClass, managementNotification)
+        bufferItem = PersistenceBufferManagementItem(managementNotification)
         self._internalPersist(bufferItem)
 
-    def ProcessFailure(self, request, aggregateClass, exception):
+    def ProcessFailure(self, request, exception):
         """Notifies clients that an event processing request has failed."""
-        bufferItem = PersistenceBufferFailureItem(aggregateClass, request, exception)
+        bufferItem = PersistenceBufferFailureItem(self.aggregateClass, request, exception)
         self._internalPersist(bufferItem)
 
-
-    def ProcessTag(self, aggregate, tag, tagExpiration, createDate=long(time.time())):
-        bufferItem = PersistenceBufferTagItem(aggregate.__class__, aggregate, tag, tagExpiration, createDate)
+    def ProcessTag(self, aggregate, logicId, tag, createDate=long(time.time())):
+        bufferItem = PersistenceBufferTagItem(aggregate, logicId, tag, createDate)
         self._internalPersist(bufferItem)
 
     def EnqueueForPersistence(self, bufferItem):
         self._internalPersist(bufferItem)
 
-    def FlushPersistenceBuffer(self, aggregateClass, shouldForce=False):
+    def FlushPersistenceBuffer(self, shouldForce=False):
         if self._isTransactionInProgress():
             raise ChronosCoreException('Cannot flush persistence buffer while transaction is in progress')
         with self.lock:
             if shouldForce or len(self.persistenceBuffer) >= self.MaxBufferedEvents:
-                self.eventStore.PersistEvents(aggregateClass, self.persistenceBuffer)
+                self.eventPersister.PersistEvents(self.persistenceBuffer)
                 del self.persistenceBuffer[:]
-                return True
-            return False
-
-    def _applyEventProtos(self, aggregate, eventProtos):
-        """Applies all events later than the current version of the supplied aggregate
-        to that same instance."""
-        logicVersions = list(set(event.logicVersion for event in eventProtos))
-        logicResults = self.eventStore.GetAggregateLogic(aggregate.__class__, logicVersions)
-        logicDict = dict(zip(logicVersions, logicResults))
-
-        logicVersion = eventProtos[0].logicVersion
-        module = self.logicCompiler.BuildModule(aggregate.__class__.__name__, logicDict[logicVersion])
-        for eventProto in eventProtos:
-            if eventProto.logicVersion != logicVersion:
-                logicVersion = eventProto.logicVersion
-                module = self.logicCompiler.BuildModule(aggregate.__class__.__name__, logicDict[logicVersion])
-
-            _, className = eventProto.type.rsplit('.', 1)
-            eventClass = getattr(module, className)
-            singleEvent = eventClass(eventProto.version, eventProto.logicVersion)
-            singleEvent.proto.ParseFromString(eventProto.proto)
-            singleEvent.receivedTimestamp = eventProto.receivedTimestamp
-            singleEvent.processedTimestamp = eventProto.processedTimestamp
-
-            tempAggregate = singleEvent.Aggregate(aggregate.aggregateId, aggregate.version, aggregate.expiration)
-            tempAggregate.proto.ParseFromString(aggregate.proto.SerializeToString())
-            self.Process(None, tempAggregate, singleEvent) #pylint: disable=E1120
-            aggregate.proto.ParseFromString(tempAggregate.proto.SerializeToString())
-            aggregate.version = tempAggregate.version
-
-    def ReplayByTimestampRange(self, aggregate, fromTimestamp, toTimestamp):
-        """Applies all events processed later than the fromTimestamp and before the toTimestamp
-        of the supplied aggregate to the same instance"""
-        with self.lock:
-            try:
-                self.isReplaying = True
-                eventProtos = self.eventStore.GetEventsByTimestampRange(aggregate, fromTimestamp, toTimestamp)
-                if len(eventProtos) == 0:
-                    raise NoEventsFound('No events found from timestamps {0} to {1}'.format(fromTimestamp, toTimestamp))
-
-                self._applyEventProtos(aggregate, eventProtos)
-            except Exception:
-                EventLogger.LogExceptionAuto(self, 'Replay of aggregate failed',
-                                             tags={'Aggregate': aggregate.__class__.__name__,
-                                                   'AggregateId': aggregate.aggregateId,
-                                                   'FromTimestamp': fromTimestamp,
-                                                   'ToTimestamp': toTimestamp})
-            finally:
-                self.isReplaying = False
-
-    def ReplayToVersion(self, aggregate, toVersion):
-        """Applies all events later than the current version of the supplied aggregate
-        to that same instance."""
-        with self.lock:
-            try:
-                self.isReplaying = True
-                eventProtos = self.eventStore.GetEventsToVersion(aggregate, toVersion)
-                if len(eventProtos) == 0:
-                    raise NoEventsFound('No events found from version {0} to version {1}'.format(aggregate.version, toVersion))
-
-                self._applyEventProtos(aggregate, eventProtos)
-            except Exception:
-                EventLogger.LogExceptionAuto(self, 'Replay of aggregate failed',
-                                             tags={'Aggregate': aggregate.__class__.__name__,
-                                                   'AggregateId': aggregate.aggregateId,
-                                                   'Version': aggregate.version,
-                                                   'ToVersion': toVersion})
-            finally:
-                self.isReplaying = False
+                self.aggregateSnapshotBuffer = []

@@ -34,11 +34,11 @@ class dependent_upon(object): #pylint: disable=C0103
     def __call__(self, cls):
         if not issubclass(cls, Event):
             raise ChronosSemanticException('dependent_upon can only be applied to Chronos.Core.Event subclasses')
-        if not hasattr(cls.Proto, self.destinationProperty):
+        if not self.destinationProperty in cls.Proto.DESCRIPTOR.fields_by_name:
             raise ChronosSemanticException('Invalid destinationProperty {0}'.format(self.destinationProperty))
-        if self.eventSourceProperty is not None and not hasattr(cls.Proto, self.eventSourceProperty):
+        if self.eventSourceProperty is not None and not self.eventSourceProperty in cls.Proto.DESCRIPTOR.fields_by_name:
             raise ChronosSemanticException('Invalid eventSourceProperty {0}'.format(self.eventSourceProperty))
-        if self.aggregateSourceProperty is not None and not hasattr(cls.Aggregate.Proto, self.aggregateSourceProperty):
+        if self.aggregateSourceProperty is not None and not self.aggregateSourceProperty in cls.Aggregate.Proto.DESCRIPTOR.fields_by_name:
             raise ChronosSemanticException('Invalid aggregateSourceProperty {0}'.format(self.aggregateSourceProperty))
         if len([dependency for dependency in cls.Dependencies if dependency.aggregateName == self.aggregateName]) > 0:
             raise ChronosSemanticException('Cannot satisfy duplicate dependency on Aggregate {0}'.format(self.aggregateName))
@@ -187,9 +187,6 @@ class ChronosProcessSynchronizer(object):
             raise DependenciesNotReleased('Dependencies must be released before acquiring')
         try:
             for dependency in event.Dependencies:
-                EventLogger.LogInformationAuto(self, 'Acquiring remote dependency',
-                                               tags={'Aggregate': aggregate.__class__.__name__,
-                                                     'Dependency': dependency.aggregateName})
                 try:
                     proxy = self.synchronizationProxies[dependency.aggregateName]
                 except KeyError:

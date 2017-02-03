@@ -16,15 +16,18 @@ import Queue
 from collections import namedtuple
 from datetime import datetime
 from multiprocessing.managers import BaseManager
+from redis import StrictRedis, exceptions as RedisExceptions
 from threading import Lock, Thread, Event
 
-from Chronos.EventLogger import EventLogger
-from Chronos.Infrastructure import InfrastructureProvider, ConfigurablePlugin, TransportType
+from Chronos.Chronos_pb2 import ChronosRegistrationResponse, ChronosManagementNotification, ChronosQueryResponse
 
-from Chronos.Chronos_pb2 import ChronosRegistrationResponse, ChronosManagementNotification, ChronosQueryResponse, ChronosTagList
-
-from Chronos.Core import AggregateLogicCompiler, ValidationError
+from Chronos.Core import AggregateLogicCompiler, ValidationError, ChronosFailedEventPersistenceException
 from Chronos.Dependency import ChronosProcessSynchronizer
+from Chronos.EventLogger import EventLogger
+from Chronos.Infrastructure import InfrastructureProvider, ConfigurablePlugin, TransportType, AbstractCoreProvider
+from Chronos.PostgresBackend import PostgresLogicConnection, PostgresEventReadConnection, PostgresEventWriteConnection
+from Chronos.Profiling import ProcessAwareProfiler
+
 
 class ChronosGatewayException(Exception):
     """An Exception indicating that Chronos has encountered an error from
@@ -32,8 +35,74 @@ class ChronosGatewayException(Exception):
     network events, logic errors, or inconsistent state."""
     pass
 
+
+def GetRedisConnectionDetails(infrastructureProvider):
+    redisConfig = infrastructureProvider.GetSection('DefaultRedisImplementation')
+    host = redisConfig.pop('host', '127.0.0.1')
+    port = redisConfig.pop('port', 6379)
+    return host, port, redisConfig
+
+def GetPostgresConnectionDetails(infrastructureProvider):
+    config = infrastructureProvider.GetSection('PostgresConnectionDetails')
+    user = config.pop('user')
+    password = config.pop('password', '')
+    database = config.pop('database')
+    host = config.pop('host')
+    port = config.pop('port', 5432) # use default postgres port if one isn't supplied
+    return user, password, database, host, port
+
+class DefaultCoreProvider(AbstractCoreProvider):
+    def __init__(self, aggregateClass, **kwargs): #pylint: disable=W0613
+        super(DefaultCoreProvider, self).__init__(aggregateClass)
+        self.aggregateName = self.aggregateClass.__name__
+        postgresUser, postgresPassword, postgresDatabase, postgresHost, postgresPort = GetPostgresConnectionDetails(self.infrastructureProvider)
+        redisHost, redisPort, redisConfig = GetRedisConnectionDetails(self.infrastructureProvider)
+
+        try:
+            self.redisConnection = StrictRedis(host=redisHost, port=redisPort, **redisConfig)
+        except Exception:
+            EventLogger.LogExceptionAuto(self, 'Failed to initialize Notifier')
+            raise
+        self._notifier = self.infrastructureProvider.GetConfigurablePlugin(ConfigurablePlugin.Notifier, aggregateClass=self.aggregateClass, #pylint: disable=C0103
+                                                                           redisConnection=self.redisConnection)
+
+        self.logicConnection = PostgresLogicConnection(postgresUser, postgresPassword, postgresDatabase, postgresHost, postgresPort)
+        self._logicStore = self.infrastructureProvider.GetConfigurablePlugin(ConfigurablePlugin.LogicStore, postgresConnection=self.logicConnection) #pylint: disable=C0103
+
+        self.eventPersisterConnection = PostgresEventWriteConnection(self.aggregateName, postgresUser, postgresPassword, postgresDatabase, postgresHost, postgresPort)
+        self._eventPersister = self.infrastructureProvider.GetConfigurablePlugin(ConfigurablePlugin.EventPersister, aggregateClass=self.aggregateClass, #pylint: disable=C0103
+                                                                                 notifier=self._notifier, postgresConnection=self.eventPersisterConnection)
+
+        self.eventReaderConnection = PostgresEventReadConnection(self.aggregateName, postgresUser, postgresPassword, postgresDatabase, postgresHost, postgresPort)
+        self._eventReader = self.infrastructureProvider.GetConfigurablePlugin(ConfigurablePlugin.EventReader, aggregateClass=self.aggregateClass, #pylint: disable=C0103
+                                                                              postgresConnection=self.eventReaderConnection)
+
+    @property
+    def notifier(self):
+        return self._notifier
+
+    @property
+    def logicStore(self):
+        return self._logicStore
+
+    @property
+    def eventPersister(self):
+        return self._eventPersister
+
+    @property
+    def eventReader(self):
+        return self._eventReader
+
+    def Dispose(self):
+        self.notifier.Dispose()
+        del self.redisConnection
+        self.logicConnection.Dispose()
+        self.eventPersisterConnection.Dispose()
+        self.eventReaderConnection.Dispose()
+
+
 ChronosEventQueueItem = namedtuple('ChronosEventQueueItem', ['aggregateId', 'eventType', 'eventProto', 'requestId', 'senderId',
-                                                             'receivedTimestamp', 'tag', 'tagExpiration'])
+                                                             'receivedTimestamp', 'tag'])
 ChronosEventQueueTransaction = namedtuple('ChronosEventQueueTransaction', ['events'])
 
 class ChronosQueryItem(object):
@@ -55,17 +124,18 @@ class ChronosProcess(object):
     instance of ChronosProcess runs within its own physical process on the server.
 
     ChronosProcess has three main pieces of functionality: asynchronous event queue
-    processing, synchronous query handling, and tag management. Query hanlding is
+    processing, synchronous query handling, and tag management. Query handling is
     separated from the other operations and cannot affect writing. Tags can optionally
     be specified along with specific events (in which case a failing tag creation will
     fail the entire event).
 
     This class is threadsafe and all exceptions should be logged and handled internally."""
-    def __init__(self, aggregateClass, aggregateRegistry, logicVersion, coreProviderGenerator):
+    def __init__(self, aggregateClass, aggregateRegistry, logicMetadata, coreProviderGenerator, profiler):
         self.aggregateClass = aggregateClass
         self.aggregateRegistry = aggregateRegistry
-        self.logicVersion = logicVersion
+        self.logicMetadata = logicMetadata
         self.coreProviderGenerator = coreProviderGenerator
+        self.profiler = profiler
         self.processSynchronizer = ChronosProcessSynchronizer()
         self.lock = Lock()
         self.queue = Queue.Queue()
@@ -74,10 +144,9 @@ class ChronosProcess(object):
         self.isRunning = False
         self.processingThread = None
         self.coreProvider = None
-        self.indexStore = None
         self.repository = None
-        self.index = None
         self.processor = None
+        self.notifier = None
         self.maxRequestId = 0
 
     def Startup(self):
@@ -91,16 +160,31 @@ class ChronosProcess(object):
                     return
 
                 self.coreProvider = self.coreProviderGenerator(self.aggregateClass)
-                self.indexStore = self.coreProvider.GetIndexStore()
                 self.repository = self.coreProvider.GetRepository()
                 self.processor = self.coreProvider.GetProcessor()
+                self.notifier = self.coreProvider.GetNotifier()
 
                 self.isRunning = True
                 self.processingThread = Thread(target=self.EventLoop, name=self.aggregateClass.__name__)
                 self.processingThread.start()
+
             except Exception:
-                EventLogger.LogExceptionAuto(self, 'Unable to start Chronos process',
+                EventLogger.LogExceptionAuto(self, 'Unable to start Chronos process', tags={'Aggregate': self.aggregateClass.__name__})
+                excInfo = sys.exc_info()
+                raise ChronosGatewayException, excInfo[1], excInfo[2]
+
+            try:
+                managementNotification = ChronosManagementNotification(notificationType=ChronosManagementNotification.REGISTERED) #pylint: disable=E1101
+                for attr in sorted(self.aggregateClass.IndexedAttributes):
+                    attribute = managementNotification.indexedAttributes.add() #pylint: disable=E1101
+                    attribute.attributeName = attr
+                    attribute.isCaseInsensitive = attr in self.aggregateClass.NoCaseAttributes
+
+                self.notifier.PublishGatewayManagementNotification(managementNotification)
+            except Exception:
+                EventLogger.LogExceptionAuto(self, 'Shutting down Chronos process', 'Exception while publishing startup notification',
                                              tags={'Aggregate': self.aggregateClass.__name__})
+                self.Shutdown()
                 excInfo = sys.exc_info()
                 raise ChronosGatewayException, excInfo[1], excInfo[2]
 
@@ -112,24 +196,26 @@ class ChronosProcess(object):
         EventLogger.LogInformationAuto(self, 'Shutting down Chronos process',
                                        tags={'Aggregate': self.aggregateClass.__name__})
         with self.lock:
+            if not self.isRunning:
+                return
             try:
-                if not self.isRunning:
-                    return
-
                 self.isRunning = False
                 self.queue.put(None)
                 self.processingThread.join()
                 self.processingThread = None
 
+                managementNotification = ChronosManagementNotification(notificationType=ChronosManagementNotification.UNREGISTERED) #pylint: disable=E1101
+                self.notifier.PublishGatewayManagementNotification(managementNotification)
+
+            except Exception:
+                EventLogger.LogExceptionAuto(self, 'Error shutting down Chronos process',
+                                             tags={'Aggregate': self.aggregateClass.__name__})
+            finally:
                 self.coreProvider.Dispose()
                 self.coreProvider = None
                 self.repository = None
                 self.processor = None
-            except Exception:
-                EventLogger.LogExceptionAuto(self, 'Error shutting down Chronos process',
-                                             tags={'Aggregate': self.aggregateClass.__name__})
-                excInfo = sys.exc_info()
-                raise ChronosGatewayException, excInfo[1], excInfo[2]
+                self.notifier = None
 
     def AssignSynchronizationProxy(self, aggregateName, proxy):
         self.processSynchronizer.AssignSynchronizationProxy(aggregateName, proxy)
@@ -144,32 +230,19 @@ class ChronosProcess(object):
             raise ChronosGatewayException('Cannot enqueue event - process not running')
         self.queue.put(eventQueueItem)
 
-    def _tryCreateSqliteSession(self):
-        try:
-            self.index = self.indexStore.GetSession()
-            return True
-        except Exception:
-            EventLogger.LogExceptionAuto(self, 'Critical failure encountered while initializing', 'Failed to acquire SQLite session',
-                                         tags={'Aggregate': self.aggregateClass.__name__})
+    def _tryVerifyEventPersistenceCheckpoint(self):
+        while self.isRunning:
             try:
-                self.Shutdown()
-            except ChronosGatewayException:
-                pass # Already logged, not much we can do here
-            except Exception:
-                EventLogger.LogExceptionAuto(self, 'Impossible exception raised',
-                                             'Shutdown raised an exception of type other than ChronosGatewayException',
-                                             tags={'Aggregate': self.aggregateClass.__name__})
-            return False
-
-    def _verifyEventPersistenceCheckpoint(self):
-        try:
-            eventPersistenceCheckpoint = self.repository.GetEventPersistenceCheckpoint()
-            if eventPersistenceCheckpoint is None:
+                self.processor.TryVerifyEventPersistenceCheckpoint()
                 return
-            eventPersistenceCheckpoint.VerifyCheckpoint(self.indexStore, self.index, self.repository)
-        except Exception:
-            EventLogger.LogExceptionAuto(self, 'Checkpoint verification failed',
-                                         tags={'Aggregate': self.aggregateClass.__name__})
+            except ChronosFailedEventPersistenceException:
+                EventLogger.LogWarningAuto(self, 'Event Persistence Checkpoint Verification failed.', 'Reattempting verification...',
+                                           tags={'AggregateName': self.aggregateClass.__name__})
+                time.sleep(1)
+            except Exception as exc:
+                errorMessage = str(exc)
+                EventLogger.LogExceptionAuto(self, 'Event Persistence Checkpoint verification failed', errorMessage,
+                                             tags={'AggregateName': self.aggregateClass.__name__})
 
     def EventLoop(self):
         """Event queue processing. This method should always be run in a background
@@ -179,12 +252,12 @@ class ChronosProcess(object):
         EventLogger.LogInformationAuto(self, 'Starting Chronos event loop',
                                        tags={'Aggregate': self.aggregateClass.__name__})
 
-        wasSessionCreated = self._tryCreateSqliteSession()
-        if not wasSessionCreated:
-            EventLogger.LogErrorAuto(self, 'Failed to create index session')
-            return
-        self._verifyEventPersistenceCheckpoint()
+        self._tryVerifyEventPersistenceCheckpoint()
 
+        try:
+            self.profiler.Begin()
+        except Exception:
+            EventLogger.LogExceptionAuto(self, 'Profiling failed')
         while self.isRunning or not self.queue.empty():
             try:
                 eventQueueItem = self.queue.get(True)
@@ -197,27 +270,19 @@ class ChronosProcess(object):
                 break
 
             self._doProcessEvent(eventQueueItem)
-        try:
-            self.index.Rollback()
-            self.index.Close()
-        except Exception:
-            EventLogger.LogExceptionAuto(self, 'Unable to finalize SQLite session',
-                                         tags={'Aggregate': self.aggregateClass.__name__})
+        self.profiler.End()
         EventLogger.LogInformationAuto(self, 'Chronos event loop exiting',
                                        tags={'Aggregate': self.aggregateClass.__name__})
 
     def Begin(self):
         self.repository.Begin()
         self.processor.Begin()
-        self.index.Begin()
 
     def Commit(self):
-        self.index.Commit()
         self.processor.Commit()
         self.repository.Commit()
 
     def Rollback(self):
-        self.index.Rollback()
         self.processor.Rollback()
         self.repository.Rollback()
 
@@ -239,23 +304,18 @@ class ChronosProcess(object):
             # items in the persistence buffer
             try:
                 self.queryEvent.clear()
-                if self.processor.FlushPersistenceBuffer(self.aggregateClass, shouldForce=self.queue.empty()):
-                    try:
-                        self.index.Begin()
-                        self.indexStore.UpdateCheckpoint(self.maxRequestId, self.index)
-                        self.index.Commit()
-                    except Exception:
-                        EventLogger.LogExceptionAuto(self, 'Failed to update index persistence checkpoint',
-                                                     tags={'Aggregate': self.aggregateClass.__name__})
-                        self.index.Rollback()
-                    self.index.Commit()
+                self.processor.FlushPersistenceBuffer(shouldForce=self.queue.empty())
+            except ChronosFailedEventPersistenceException:
+                EventLogger.LogExceptionAuto(self, 'Event persistence delayed; transaction integrity ensured',
+                                             'Loss of connection to database or notification mechanism',
+                                             tags={'Aggregate': self.aggregateClass.__name__})
+                time.sleep(1)
             finally:
                 self.queryEvent.set()
         except Exception:
             EventLogger.LogExceptionAuto(self, 'Critical error - possibly failing event notification',
                                          'Catastrophic failure encountered during single event processing',
-                                         tags={'Aggregate': self.aggregateClass.__name__, 'RequestId': eventQueueItem.requestId,
-                                               'EventType': eventQueueItem.eventType, 'AggregateId': eventQueueItem.aggregateId})
+                                         tags={'Aggregate': self.aggregateClass.__name__})
             self.Rollback()
 
     def ProcessEvent(self, eventQueueItem):
@@ -264,19 +324,19 @@ class ChronosProcess(object):
         method makes use of the AggregateRegistry created by the Chronos Core
         metaclasses at import time."""
         try:
-            existingAggregate = self.GetUnexpiredAggregate(eventQueueItem)
+            existingAggregate = self.GetAggregate(eventQueueItem)
             # Deep copy and emplace are used so that a failed validation doesn't leave the aggregate in a bad state
             aggregateCopy = copy.deepcopy(existingAggregate)
             with existingAggregate.lock:
                 aggregate, bufferItem = self.ApplyEvent(aggregateCopy, eventQueueItem)
 
+                self.processor.UpsertAggregateSnapshot(aggregate)
+
                 if existingAggregate.version == 1 or aggregate.HasDivergedFrom(existingAggregate):
-                    self.indexStore.ReindexAggregate(aggregate, self.index)
-                    self.processor.ProcessIndexDivergence(self.aggregateClass, aggregate.aggregateId)
+                    self.processor.ProcessIndexDivergence(aggregate.aggregateId)
 
                 if eventQueueItem.tag is not None:
-                    self.indexStore.IndexTag(eventQueueItem.tag, aggregateCopy.aggregateId, self.index)
-                    self.processor.ProcessTag(aggregate, eventQueueItem.tag, eventQueueItem.tagExpiration, long(time.time()))
+                    self.processor.ProcessTag(aggregate, self.logicMetadata.logicId, eventQueueItem.tag, long(time.time()))
 
                 self.processor.EnqueueForPersistence(bufferItem)
                 self.repository.Emplace(aggregate)
@@ -289,7 +349,7 @@ class ChronosProcess(object):
                                                    'Aggregate': self.aggregateClass.__name__, 'Tag': eventQueueItem.tag})
             try:
                 self.Rollback()
-                self.processor.ProcessFailure(eventQueueItem, self.aggregateClass, ex)
+                self.processor.ProcessFailure(eventQueueItem, ex)
             except Exception:
                 EventLogger.LogExceptionAuto(self, 'Critical error - failing event notification',
                                              'EventProcessor unable to send failure notification',
@@ -299,29 +359,25 @@ class ChronosProcess(object):
         finally:
             self.processSynchronizer.ReleaseDependencies()
 
-    def GetUnexpiredAggregate(self, eventQueueItem):
+    def GetAggregate(self, eventQueueItem):
         """Attempts to retrieve the aggregate instance specified by eventQueueItem.
 
-        @throw ChronosCoreException if eventQueueItem specifies a non-existant aggregate instance
-        @throw ChronosGatewayException if eventQueueItem specifies an expired aggregate instance"""
+        @throw ChronosCoreException if eventQueueItem specifies a non-existant aggregate instance"""
 
         if eventQueueItem.aggregateId == 0:
             aggregate = self.repository.Create()
         else:
             aggregate = self.repository.Get(eventQueueItem.aggregateId)
 
-        if aggregate.expiration > 0 and eventQueueItem.receivedTimestamp > aggregate.expiration:
-            raise ChronosGatewayException('Unable to process event - aggregate instance expired')
-
         return aggregate
 
     def ApplyEvent(self, aggregate, eventQueueItem):
         eventGenerator = self.aggregateRegistry[eventQueueItem.eventType]
-        event = eventGenerator(aggregate.version, self.logicVersion)
+        event = eventGenerator(aggregate.version, self.logicMetadata.logicVersion)
         event.proto.ParseFromString(eventQueueItem.eventProto)
         self.processSynchronizer.AcquireDependencies(aggregate, event)
 
-        return self.processor.Process(eventQueueItem, aggregate, event)
+        return self.processor.Process(eventQueueItem, aggregate, self.logicMetadata.logicId, event)
 
     def Acquire(self, aggregateId):
         aggregate = self.repository.AtomicGet(aggregateId)
@@ -350,27 +406,15 @@ class ChronosProcess(object):
                 if queryItem.aggregateId is not None:
                     return [self.repository.Get(queryItem.aggregateId)]
                 elif queryItem.indexKeys is not None:
-                    return self.repository.GetFromIndex(**queryItem.indexKeys)
+                    return self.repository.GetFromIndex(queryItem.indexKeys)
                 else:
                     return self.repository.GetAll()
             except Exception:
                 EventLogger.LogExceptionAuto(self, 'Error processing single query',
-                                             tags={'AggregateId': queryItem.aggregateId, 'IndexKeys': queryItem.indexKeys,
+                                             tags={'AggregateId': queryItem.aggregateId,
                                                    'Aggregate': self.aggregateClass.__name__})
                 excInfo = sys.exc_info()
                 raise ChronosGatewayException, excInfo[1], excInfo[2]
-
-    def GetAllTags(self):
-        try:
-            tagList = ChronosTagList()
-            for tag in self.indexStore.GetAllTags():
-                tagList.tags.append(tag.tag) #pylint: disable=E1101
-            return tagList
-        except Exception:
-            EventLogger.LogExceptionAuto(self, 'Error retrieving tags',
-                                         tags={'Aggregate': self.aggregateClass.__name__})
-            excInfo = sys.exc_info()
-            raise ChronosGatewayException, excInfo[1], excInfo[2]
 
     def GetByTag(self, tag, aggregateId):
         try:
@@ -491,12 +535,15 @@ class ChronosGateway(object):
     """The main server implementation. The ChronosGateway handles registration of aggregate/event
     logic from clients and routes event/query requests to the proper ChronosProcess."""
     RegisteredModulesPath = 'modules.dat'
-    def __init__(self, eventStore, synchronizationManager, coreProviderGenerator):
-        self.eventStore = eventStore
+    def __init__(self, synchronizationManager, coreProviderGenerator, gatewayStore):
         self.synchronizationManager = synchronizationManager
         self.coreProviderGenerator = coreProviderGenerator
-        self.logicCompiler = AggregateLogicCompiler(self.eventStore)
+        self.logicStore = gatewayStore.logicStore
+        self.crossAggregateAccess = gatewayStore.crossAggregateAccess
+        self.logicCompiler = AggregateLogicCompiler(self.logicStore)
         self.statisticsLogger = StatisticsLogger()
+        self.profiler = ProcessAwareProfiler('chronos.stats')
+        self.profiler.Begin()
         self.requestIdLock = Lock()
         self.registryLock = Lock()
         self.registry = {}
@@ -522,9 +569,10 @@ class ChronosGateway(object):
                 for moduleName in moduleNames:
                     try:
                         module = AggregateLogicCompiler.ImportAggregateLogic(moduleName)
-                        logicVersion, _ = self.eventStore.GetLatestAggregateLogic(module.AggregateClass).items()[0]
+                        logicMetadata, _ = self.logicStore.GetLatestAggregateLogic(module.AggregateClass.__name__)
                         self.registry[moduleName] = ChronosRegistryItem()
-                        self.AddRegistryItem(logicVersion, module)
+                        self.crossAggregateAccess.GetOrCreateMetadata(module.AggregateClass.__name__)
+                        self.AddRegistryItem(logicMetadata, module)
                     except Exception:
                         EventLogger.LogExceptionAuto(self, 'Error loading single module',
                                                      tags={'ModuleName': moduleName})
@@ -542,16 +590,19 @@ class ChronosGateway(object):
                 EventLogger.LogExceptionAuto(self, 'Error saving registered modules')
 
     @staticmethod
-    def CreateRegistrationResponse(errorMessage='', indexedAttributes=None):
+    def CreateRegistrationResponse(errorMessage='', indexedAttributes=None, caseInsensitiveAttributes=None):
         response = ChronosRegistrationResponse()
         if errorMessage:
             response.responseCode = ChronosRegistrationResponse.FAILURE #pylint: disable=E1101
             response.responseMessage = errorMessage
         else:
-            if indexedAttributes is None:
+            if indexedAttributes is None or caseInsensitiveAttributes is None:
                 raise ChronosGatewayException('Cannot create successful registration response without indexedAttributes')
             response.responseCode = ChronosRegistrationResponse.SUCCESS #pylint: disable=E1101
-            response.indexedAttributes.extend(sorted(indexedAttributes)) #pylint: disable=E1101
+            for attr in sorted(indexedAttributes):
+                attribute = response.indexedAttributes.add() #pylint: disable=E1101
+                attribute.attributeName = attr
+                attribute.isCaseInsensitive = attr in caseInsensitiveAttributes
 
         return response.SerializeToString()
 
@@ -575,27 +626,27 @@ class ChronosGateway(object):
             self.synchronizationManager.DeleteSynchronizationProxy(request.aggregateName)
             registryItem.Shutdown()
             try:
-                logicVersion, module = self.logicCompiler.Compile(request.aggregateName, request.aggregateLogic)
-                self.AddRegistryItem(logicVersion, module)
+                aggregateClassId = self.crossAggregateAccess.GetOrCreateMetadata(request.aggregateName)
+                logicMetadata, module = self.logicCompiler.Compile(aggregateClassId, request.aggregateName, request.aggregateLogic)
+                self.AddRegistryItem(logicMetadata, module)
                 self.SaveRegistry()
-                managementNotification = ChronosManagementNotification(notificationType=ChronosManagementNotification.REGISTERED, #pylint: disable=E1101
-                                                                       indexedAttributes=sorted(module.AggregateClass.IndexedAttributes))
-                self.eventStore.PublishManagementNotification(module.AggregateClass, managementNotification)
 
-                return self.CreateRegistrationResponse(indexedAttributes=module.AggregateClass.IndexedAttributes)
+                return self.CreateRegistrationResponse(indexedAttributes=module.AggregateClass.IndexedAttributes,
+                                                       caseInsensitiveAttributes=module.AggregateClass.NoCaseAttributes)
             except Exception as exc:
                 errorMessage = str(exc)
                 EventLogger.LogExceptionAuto(self, 'Aggregate registration failed', errorMessage,
                                              tags={'AggregateName': request.aggregateName})
                 return self.CreateRegistrationResponse(errorMessage=errorMessage)
 
-    def AddRegistryItem(self, logicVersion, module):
+    def AddRegistryItem(self, logicMetadata, module):
         """Creates a new ChronosProcessManager and ChronosProcess for the
         module created from a ChronosRegistrationRequest."""
+        EventLogger.LogInformationAuto(self, 'Adding Registry Item', tags={'AggregateName':module.AggregateClass.__name__})
         manager = ChronosProcessManager()
         manager.start()
         process = manager.ChronosProcess(module.AggregateClass, #pylint: disable=E1101
-                                         module.AggregateRegistry, logicVersion, self.coreProviderGenerator)
+                                         module.AggregateRegistry, logicMetadata, DefaultCoreProvider, self.profiler.GetProfilingInstance())
         self.synchronizationManager.AddSynchronizationProxy(module.AggregateClass.__name__, process, module.AggregateClass.Dependencies)
         self.registry[module.__name__].Startup(manager, process, module)
 
@@ -622,12 +673,8 @@ class ChronosGateway(object):
             if registryItem is not None:
                 with registryItem.lock:
                     try:
-                        module = registryItem.module
                         self.synchronizationManager.DeleteSynchronizationProxy(aggregateName)
                         registryItem.Shutdown()
-                        if module is not None:
-                            managementNotification = ChronosManagementNotification(notificationType=ChronosManagementNotification.UNREGISTERED) #pylint: disable=E1101
-                            self.eventStore.PublishManagementNotification(module.AggregateClass, managementNotification)
                     finally:
                         self.SaveRegistry()
         except Exception:
@@ -645,7 +692,8 @@ class ChronosGateway(object):
                 return self.CreateRegistrationResponse(errorMessage='Aggregate {0} not found in registry'.format(aggregateName))
             if not registryItem.isRunning:
                 return self.CreateRegistrationResponse(errorMessage='Aggregate {0} not currently running'.format(aggregateName))
-            return self.CreateRegistrationResponse(indexedAttributes=registryItem.module.AggregateClass.IndexedAttributes)
+            return self.CreateRegistrationResponse(indexedAttributes=registryItem.module.AggregateClass.IndexedAttributes,
+                                                   caseInsensitiveAttributes=registryItem.module.AggregateClass.NoCaseAttributes)
         except Exception as ex:
             EventLogger.LogExceptionAuto(self, 'Error checking aggregate status',
                                          tags={'Aggregate': aggregateName})
@@ -660,7 +708,7 @@ class ChronosGateway(object):
         """Creates a ChronosEventQueueItem and enqueues it for processing by the
         correct ChronosProcess instance. After the event is processed, the aggregate
         snapshot will be tagged with the provided tag."""
-        return self._routeEvent(request.request, request.tag, request.tagExpiration)
+        return self._routeEvent(request.request, request.tag)
 
     def RouteTransaction(self, transaction):
         """Creates a ChronosTransactionQueueItem and enqueues it for processing
@@ -679,8 +727,7 @@ class ChronosGateway(object):
             aggregateName, eventType = request.eventType.split('.')
             event = ChronosEventQueueItem(request.aggregateId, eventType, request.eventProto, requestId,
                                           request.senderId, transactionTime,
-                                          tagRequest.tag if tagRequest.tag else None,
-                                          tagRequest.tagExpiration if tagRequest.tag else None)
+                                          tagRequest.tag if tagRequest.tag else None)
             events.append(event)
         transaction = ChronosEventQueueTransaction(events)
         registryItem = self.GetRegistryItem(aggregateName)
@@ -688,8 +735,7 @@ class ChronosGateway(object):
 
         return requestId
 
-    def _routeEvent(self, request, tag=None, tagExpiration=None):
-
+    def _routeEvent(self, request, tag=None):
         aggregateName, eventType = request.eventType.split('.')
         registryItem = self.GetRegistryItem(aggregateName)
 
@@ -698,7 +744,7 @@ class ChronosGateway(object):
             self.requestIdCounter += 1
             eventQueueItem = ChronosEventQueueItem(request.aggregateId, eventType,
                                                    request.eventProto, requestId, request.senderId,
-                                                   long(time.time() * 1e9), tag, tagExpiration)
+                                                   long(time.time() * 1e9), tag)
             registryItem.process.SendEvent(eventQueueItem)
 
         self.statisticsLogger.LogEvent(aggregateName, eventType)
@@ -720,6 +766,7 @@ class ChronosGateway(object):
         if len(request.indexKeys) % 2 != 0:
             raise ChronosGatewayException('Malformed index keys')
 
+        # TODO(cjackson): use dictionary comprehension once the QueryByIndex proto uses a better dictionary
         indexKeys = dict(request.indexKeys[i:i + 2] for i in xrange(0, len(request.indexKeys), 2))
         queryItem = ChronosQueryItem(indexKeys=indexKeys)
         return self._performQuery(request.aggregateName, queryItem)
@@ -735,11 +782,6 @@ class ChronosGateway(object):
             self._addToQueryResponse(response, aggregate)
 
         return response.SerializeToString()
-
-    def GetTags(self, aggregateName):
-        """Retrieves all tags for the provided Aggregate."""
-        registryItem = self.GetRegistryItem(aggregateName)
-        return registryItem.process.GetAllTags().SerializeToString()
 
     def _performQuery(self, aggregateName, queryItem):
         registryItem = self.GetRegistryItem(aggregateName)
@@ -762,6 +804,7 @@ class ChronosGateway(object):
                     registryItem.Shutdown()
                 except Exception:
                     EventLogger.LogExceptionAuto(self, 'Error shutting down single registry item')
+        self.profiler.End()
 
     @staticmethod
     def _addToQueryResponse(response, aggregate):
@@ -771,6 +814,7 @@ class ChronosGateway(object):
         proto.proto = aggregate.proto.SerializeToString()
 
 if __name__ == '__main__':
+    os.chdir('/var/lib/chronos')
     EventLogger.InitializeLogger(application='ChronosGateway')
 
     EventLogger.LogInformation('Chronos', 'Gateway', 'main', 'Chronos Hard Start')

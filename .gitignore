@@ -1,0 +1,4 @@
+*.pyc
+docs/build/
+docs/source/doxyxml
+.DS_Store

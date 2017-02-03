@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# Source the Python virtual environment
+DIR="$(dirname "$(readlink -f "$0")")"
+source $DIR/../../../../../bin/activate
+
+# Find python location
+PYTHON=`which python`
+if [ $? != 0 ]; then
+  echo 'Cannot locate python'
+  exit 2
+fi
+
+# Find site-packages location
+SITEPACKAGES=`python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())"`
+
+# Assemble the base file directory from which we'll copy the Chronos files
+FILE_DIR="$SITEPACKAGES/Chronos/"
+
+# python "$FILE_DIR/chronos_deploy.py"

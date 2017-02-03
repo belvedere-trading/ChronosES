@@ -1,0 +1,6 @@
+#!/bin/sh
+# -*- mode: sh -*-
+
+alembic upgrade head
+alembic revision --autogenerate
+alembic upgrade head

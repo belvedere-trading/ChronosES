@@ -8,15 +8,14 @@ from Chronos.EventLogger import EventLogger
 from Chronos.Chronos_pb2 import (ChronosRegistrationRequest, ChronosRequest, ChronosRequestWithTag, ChronosTransactionRequest, ChronosQueryAllRequest,
                                               ChronosQueryByIdRequest, ChronosQueryByIndexRequest, ChronosQueryByTagRequest)
 
-from Chronos.Core import ChronosCoreProvider
 from Chronos.Dependency import AggregateSynchronizationManager
 from Chronos.DefaultImplementations import GetConfiguredBinding
 from Chronos.Infrastructure import AbstractServiceImplementations, AbstractClientProxy, ConfigurablePlugin
 from Chronos.Gateway import ChronosGatewayException, ChronosGateway
 
 ISRUNNING = False
-EVENTSTORE = None
 SYNCHRONIZATIONMANAGER = None
+GATEWAYSTORE = None
 GATEWAY = None
 APP = Flask(__name__)
 
@@ -96,11 +95,6 @@ def GetByTag():
     chronosRequest.ParseFromString(request.data)
     return CreateBinaryResponse(GATEWAY.GetByTag(chronosRequest))
 
-@APP.route('/GetTags', methods=['POST'])
-def GetTags():
-    EnsureRunning()
-    return CreateBinaryResponse(GATEWAY.GetTags(request.data))
-
 
 class FlaskLogger(TransLogger):
     """This is a specific logger to use with Flask.
@@ -145,21 +139,23 @@ class ChronosGatewayRestService(AbstractServiceImplementations):
         if ISRUNNING:
             return
 
-        global EVENTSTORE  #pylint:disable=W0603
+        global COREPROVIDERGENERATOR  #pylint:disable=W0603,W0601
         global SYNCHRONIZATIONMANAGER  #pylint:disable=W0603
+        global GATEWAYSTORE  #pylint:disable=W0603
         global GATEWAY  #pylint:disable=W0603
         global ISRUNNING  #pylint:disable=W0603
 
-        EVENTSTORE = self.infrastructureProvider.GetConfigurablePlugin(ConfigurablePlugin.EventStore)
+        COREPROVIDERGENERATOR = self.infrastructureProvider.GetConfigurablePlugin(ConfigurablePlugin.CoreProvider)
         SYNCHRONIZATIONMANAGER = AggregateSynchronizationManager()
-        GATEWAY = ChronosGateway(EVENTSTORE, SYNCHRONIZATIONMANAGER, ChronosCoreProvider)
+        GATEWAYSTORE = self.infrastructureProvider.GetConfigurablePlugin(ConfigurablePlugin.GatewayStore)
+        GATEWAY = ChronosGateway(SYNCHRONIZATIONMANAGER, COREPROVIDERGENERATOR, GATEWAYSTORE)
         ISRUNNING = True
 
     def BlockingRunService(self, commandLineArgs):
         appLogged = FlaskLogger(APP)
         cherrypy.tree.graft(appLogged, '/')
         cherrypy.config.update({
-            'engine.autoreload_on': False,
+            'engine.autoreload.on': False,
             'log.screen': False,
             'server.socket_port': self.port,
             'server.socket_host': self.host,
@@ -178,14 +174,14 @@ class ChronosGatewayRestService(AbstractServiceImplementations):
         if not ISRUNNING:
             return
 
-        global EVENTSTORE  #pylint:disable=W0603
+        global GATEWAYSTORE  #pylint:disable=W0603
         global GATEWAY  #pylint:disable=W0603
         global ISRUNNING  #pylint:disable=W0603
 
         GATEWAY.Shutdown()
         GATEWAY = None
-        EVENTSTORE.Dispose()
-        EVENTSTORE = None
+        GATEWAYSTORE.Dispose()
+        GATEWAYSTORE = None
         ISRUNNING = False
 
 
@@ -239,6 +235,3 @@ class ChronosGatewayRestClient(AbstractClientProxy):
 
     def GetByTag(self, chronosRequest):
         return self.CallRestService('GetByTag', chronosRequest)
-
-    def GetTags(self, aggregateName):
-        return self.CallRestService('GetTags', aggregateName)
