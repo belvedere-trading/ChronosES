@@ -8,7 +8,7 @@ class BankAccountClient(ChronosClient):
     def __init__(self, redisConnection):
         super(BankAccountClient, self).__init__(BankAccount,
                                                 callback=self.HandleSuccess,
-                                                errorCallback=self.HandleFailure
+                                                errorCallback=self.HandleFailure,
                                                 redisConnection=redisConnection)
 
     def HandleSuccess(self, requestId, aggregateResponse, eventResponse, wasSentByMe):
