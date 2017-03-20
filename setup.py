@@ -43,7 +43,7 @@ class CustomSdist(sdist):
 
 
 setup(name='Chronos',
-      version='0.1.0',
+      version='1.0.0',
       author='Belvedere Trading',
       author_email='ChronosES@belvederetrading.com',
       cmdclass={'sdist': CustomSdist},
