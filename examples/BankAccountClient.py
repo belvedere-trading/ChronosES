@@ -5,11 +5,11 @@ class BankAccountClient(ChronosClient):
     # EventTypes must contain all possible types of Event subclasses that ChronosES can send
     # back to the client. These are used for automatic Event deserialization.
     EventTypes = (CreateEvent, DepositEvent, WithdrawEvent, CloseEvent)
-    def __init__(self):
+    def __init__(self, redisConnection=None):
         super(BankAccountClient, self).__init__(BankAccount,
                                                 callback=self.HandleSuccess,
                                                 errorCallback=self.HandleFailure,
-                                                redisConnection=None)
+                                                redisConnection=redisConnection)
 
     def HandleSuccess(self, requestId, aggregateResponse, eventResponse, wasSentByMe):
         # aggregateResponse is Chronos.Client.AggregateResponse
