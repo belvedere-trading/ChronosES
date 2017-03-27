@@ -4,8 +4,9 @@ from unittest import TestCase
 class AggregateSynchronizationManagerTest(TestCase):
     def setUp(self):
         self.patcher = mock.patch.dict('sys.modules',
-         'Chronos.EventLogger': mock.MagicMock(),
-         'Chronos.Core': mock.MagicMock()
+        {
+            'Chronos.EventLogger': mock.MagicMock(),
+            'Chronos.Core': mock.MagicMock()
         })
         self.patcher.start()
 

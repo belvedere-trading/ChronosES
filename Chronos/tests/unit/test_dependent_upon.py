@@ -6,12 +6,15 @@ class MockEvent(object):
     Dependencies = []
 class MockSemanticException(Exception):
     pass
+class ProtoClass(mock.MagicMock):
+    pass
 
 class DependentUponTest(TestCase):
     def setUp(self):
         self.patcher = mock.patch.dict('sys.modules',
-         'Chronos.EventLogger': mock.MagicMock(),
-         'Chronos.Core': mock.MagicMock(Event=MockEvent, ChronosSemanticException=MockSemanticException)
+        {
+            'Chronos.EventLogger': mock.MagicMock(),
+            'Chronos.Core': mock.MagicMock(Event=MockEvent, ChronosSemanticException=MockSemanticException)
         })
         self.patcher.start()
 
@@ -53,7 +56,7 @@ class DependentUponTest(TestCase):
         try:
             @dependent_upon('name', 'badPropertyName', eventSourceProperty='anything')
             class TestClass(Event):
-                Proto = object
+                Proto = mock.MagicMock()
         except ChronosSemanticException as ex:
             self.assertTrue('Invalid destinationProperty' in str(ex), 'Unexpected error message')
         else:
@@ -63,7 +66,7 @@ class DependentUponTest(TestCase):
         try:
             @dependent_upon('name', 'destination', eventSourceProperty='reallyBad')
             class TestClass(Event):
-                Proto = namedtuple('Proto', ['destination'])
+                Proto = mock.MagicMock(DESCRIPTOR=mock.MagicMock(fields_by_name=set(['destination'])))
         except ChronosSemanticException as ex:
             self.assertTrue('Invalid eventSourceProperty' in str(ex), 'Unexpected error message')
         else:
@@ -73,8 +76,8 @@ class DependentUponTest(TestCase):
         try:
             @dependent_upon('name', 'destination', aggregateSourceProperty='lastBadOne')
             class TestClass(Event):
-                Proto = namedtuple('Proto', ['destination'])
-                Aggregate = mock.MagicMock(Proto=namedtuple('Aggregate', ['someProperty']))
+                Proto = mock.MagicMock(DESCRIPTOR=mock.MagicMock(fields_by_name=set(['destination'])))
+                Aggregate = mock.MagicMock(Proto=mock.MagicMock(DESCRIPTOR=mock.MagicMock(fields_by_name=set(['someProperty']))))
         except ChronosSemanticException as ex:
             self.assertTrue('Invalid aggregateSourceProperty' in str(ex), 'Unexpected error message')
         else:
@@ -86,7 +89,7 @@ class DependentUponTest(TestCase):
             @dependent_upon('duplicate', 'destination', eventSourceProperty='otherSource')
             class TestClass(Event):
                 Aggregate = mock.MagicMock(Dependencies=set())
-                Proto = namedtuple('Proto', ['destination', 'source', 'otherSource'])
+                Proto = mock.MagicMock(DESCRIPTOR=mock.MagicMock(fields_by_name=set(['destination', 'source', 'otherSource'])))
         except ChronosSemanticException as ex:
             self.assertTrue('Cannot satisfy duplicate' in str(ex))
         else:
@@ -96,7 +99,7 @@ class DependentUponTest(TestCase):
         @dependent_upon('MyCoolAggregateName', 'greatDestination', eventSourceProperty='awesomeEventSource')
         class TestClass(Event):
             Aggregate = mock.MagicMock(Dependencies=set())
-            Proto = namedtuple('Proto', ['greatDestination', 'awesomeEventSource'])
+            Proto = mock.MagicMock(DESCRIPTOR=mock.MagicMock(fields_by_name=set(['greatDestination', 'awesomeEventSource'])))
 
         self.assertTrue('MyCoolAggregateName' in TestClass.Aggregate.Dependencies)
         dependency, = TestClass.Dependencies
@@ -108,8 +111,8 @@ class DependentUponTest(TestCase):
     def test_dependent_upon_with_valid_destination_and_aggregate_source_property_should_set_dependencies(self):
         @dependent_upon('MyCoolAggregateName', 'greatDestination', aggregateSourceProperty='finalSource')
         class TestClass(Event):
-            Aggregate = mock.MagicMock(Dependencies=set(), Proto=namedtuple('Proto', ['finalSource']))
-            Proto = namedtuple('Proto', ['greatDestination'])
+            Aggregate = mock.MagicMock(Dependencies=set(), Proto=mock.MagicMock(DESCRIPTOR=mock.MagicMock(fields_by_name=set(['finalSource']))))
+            Proto = mock.MagicMock(DESCRIPTOR=mock.MagicMock(fields_by_name=set(['greatDestination'])))
 
         self.assertTrue('MyCoolAggregateName' in TestClass.Aggregate.Dependencies)
         dependency, = TestClass.Dependencies
@@ -122,8 +125,8 @@ class DependentUponTest(TestCase):
         @dependent_upon('MyCoolAggregateName', 'greatDestination', aggregateSourceProperty='finalSource')
         @dependent_upon('AnotherAggregate', 'secondDestination', eventSourceProperty='anotherSource')
         class TestClass(Event):
-            Aggregate = mock.MagicMock(Dependencies=set(), Proto=namedtuple('Proto', ['finalSource']))
-            Proto = namedtuple('Proto', ['greatDestination', 'secondDestination', 'anotherSource'])
+            Aggregate = mock.MagicMock(Dependencies=set(), Proto=mock.MagicMock(DESCRIPTOR=mock.MagicMock(fields_by_name=set(['finalSource']))))
+            Proto = mock.MagicMock(DESCRIPTOR=mock.MagicMock(fields_by_name=set(['greatDestination', 'secondDestination', 'anotherSource'])))
 
         self.assertTrue('MyCoolAggregateName' in TestClass.Aggregate.Dependencies)
         self.assertTrue('AnotherAggregate' in TestClass.Aggregate.Dependencies)

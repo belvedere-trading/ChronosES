@@ -8,7 +8,7 @@ from nose_parameterized import parameterized
 from Queue import Queue
 from threading import Lock
 
-MockAggregate = namedtuple('MockAggregate', ['aggregateId', 'version', 'expiration', 'lock'])
+MockAggregate = namedtuple('MockAggregate', ['aggregateId', 'version', 'lock'])
 class MockDivergedAggregate(MockAggregate):
     lock = Lock()
     def HasDivergedFrom(self, _):
@@ -21,17 +21,15 @@ class MockNonDivergedAggregate(MockAggregate):
 
 class GatewayTestBase(object):
     def GetMockCoreProviderGenerator(self):
-        self.mockSqliteSession = mock.MagicMock()
-        self.mockIndexStore = mock.MagicMock()
-        self.mockIndexStore.GetSession.return_value = self.mockSqliteSession
+        self.mockNotifier = mock.MagicMock()
         self.mockAggregateRepository = mock.MagicMock()
         self.mockBufferItem = mock.MagicMock()
         self.mockEventProcessor = mock.MagicMock()
-        self.mockEventProcessor.FlushPersistenceBuffer = lambda aggrgegateClass, shouldForce: shouldForce
-        self.mockEventProcessor.Process = lambda eventQueueItem, aggregate, event: (aggregate, self.mockBufferItem)
+        self.mockEventProcessor.FlushPersistenceBuffer = lambda shouldForce: shouldForce
+        self.mockEventProcessor.Process = lambda eventQueueItem, aggregate, logicId, event: (aggregate, self.mockBufferItem)
         self.mockCoreProvider = mock.MagicMock()
         mockCoreProviderGenerator = mock.MagicMock(return_value=self.mockCoreProvider)
-        self.mockCoreProvider.GetIndexStore.return_value = self.mockIndexStore
+        self.mockCoreProvider.GetNotifier.return_value = self.mockNotifier
         self.mockCoreProvider.GetRepository.return_value = self.mockAggregateRepository
         self.mockCoreProvider.GetProcessor.return_value = self.mockEventProcessor
         return mockCoreProviderGenerator
@@ -42,26 +40,27 @@ class ChronosProcessTest(unittest.TestCase, GatewayTestBase):
         multiprocessingManagersMock = multiprocessingMock.managers
         multiprocessingManagersMock.BaseManager = mock.MagicMock
         multiprocessingManagersMock.BaseManager.register = mock.MagicMock()
-        self.mockTagManager = mock.MagicMock()
-        mockCore = mock.MagicMock(ChronosTagManager=mock.MagicMock(return_value=self.mockTagManager),
-                                  ValidationError=object)
         self.patcher = mock.patch.dict('sys.modules',
             {'Chronos.EventLogger': mock.MagicMock(),
              'Chronos.Chronos_pb2': mock.MagicMock(),
-             'Chronos.Core': mockCore,
+             'Chronos.Core': mock.MagicMock(),
              'multiprocessing': multiprocessingMock,
-             'multiprocessing.managers': multiprocessingManagersMock
+             'multiprocessing.managers': multiprocessingManagersMock,
+             'time': mock.MagicMock(),
+             'time.sleep': mock.MagicMock()
             })
         self.patcher.start()
 
-        global ChronosGatewayException, ChronosEventQueueItem, ChronosQueryItem, ChronosEventQueueTransaction
+        global ChronosGatewayException, ChronosEventQueueItem, ChronosQueryItem, ChronosEventQueueTransaction, ChronosFailedEventPersistenceException
         from Chronos.Gateway import (ChronosProcess, ChronosGatewayException, ChronosEventQueueItem, ChronosQueryItem,
-                                     ChronosEventQueueTransaction)
-        self.mockAggregateClass = mock.MagicMock
+                                    ChronosFailedEventPersistenceException, ChronosEventQueueTransaction, )
+        self.mockAggregateClass = mock.MagicMock(__name__='TestName', IndexedAttributes=[])
         self.mockAggregateRegistry = mock.MagicMock(spec=dict)
+        self.mockLogicMetadata = mock.MagicMock(logicId=1, logicVersion=1)
         self.mockCoreProviderGenerator = self.GetMockCoreProviderGenerator()
-        self.chronosProcess = ChronosProcess(self.mockAggregateClass, self.mockAggregateRegistry,
-                                             987, self.mockCoreProviderGenerator)
+        self.mockProfiler = mock.MagicMock()
+        self.chronosProcess = ChronosProcess(self.mockAggregateClass, self.mockAggregateRegistry, self.mockLogicMetadata,
+                                             self.mockCoreProviderGenerator, self.mockProfiler)
         # Convenience so we don't have to call this in almost every test method
         self.assertFalse(self.chronosProcess.isRunning)
 
@@ -114,18 +113,9 @@ class ChronosProcessTest(unittest.TestCase, GatewayTestBase):
     def test_EventLoopWhileNotRunningShouldRaiseChronosGatewayException(self):
         self.assertRaises(ChronosGatewayException, self.chronosProcess.EventLoop)
 
-    def test_EventLoopFailingToGetSqliteSessionShouldShutDownProcess(self):
-        mockThread = self.StartProcess()
-        self.mockIndexStore.GetSession.side_effect = KeyError('catastrophy')
-        self.chronosProcess.EventLoop()
-
-        self.assertFalse(self.chronosProcess.isRunning)
-        mockThread.join.assert_called_once_with()
-        self.mockCoreProvider.Dispose.assert_called_once_with()
-
     def test_EventLoopShouldProcessRemainingQueueOnceShutdown(self):
         self.StartProcess()
-        queryItem = ChronosEventQueueItem(1, 'type', 'proto', 2, 3, 'recv', 'tag', 4)
+        queryItem = ChronosEventQueueItem(1, 'type', 'proto', 2, 3, 'recv', 'tag')
         for i in xrange(0, 3):
             self.chronosProcess.SendEvent(queryItem)
         self.chronosProcess.ProcessEvent = mock.MagicMock()
@@ -133,91 +123,62 @@ class ChronosProcessTest(unittest.TestCase, GatewayTestBase):
         self.chronosProcess.EventLoop()
 
         self.assertEqual(self.chronosProcess.ProcessEvent.call_args_list, [mock.call(queryItem), mock.call(queryItem), mock.call(queryItem)])
-        self.assertEqual(5, self.mockSqliteSession.commit.call_count)
-        self.mockSqliteSession.rollback.assert_called_once_with()
 
-    def test_ProcessEventWithNoAggregateIdShouldCreateAndIndexNewAggregate(self):
+    def test_ProcessEventWithNoAggregateIdShouldCreateNewAggregate(self):
         self.StartProcess()
-        mockAggregate = MockAggregate(aggregateId=0, version=1, expiration=0, lock=mock.MagicMock())
+        mockAggregate = MockAggregate(aggregateId=0, version=1, lock=mock.MagicMock())
         self.mockAggregateRepository.Create.return_value = mockAggregate
         mockEventQueueItem = ChronosEventQueueItem(aggregateId=0, eventType='Chronos.Test.TestEvent',
-                                                   eventProto=None, requestId=123, senderId=1, receivedTimestamp=9999, tag=None, tagExpiration=0)
+                                                   eventProto=None, requestId=123, senderId=1, receivedTimestamp=9999, tag=None)
         self.chronosProcess.SendEvent(mockEventQueueItem)
         type(self.chronosProcess).isRunning = mock.PropertyMock(side_effect=itertools.chain([True], itertools.repeat(False)))
         self.chronosProcess.EventLoop()
 
-        self.assertEqual(2, self.mockSqliteSession.begin_nested.call_count)
-        self.mockIndexStore.ReindexAggregate.assert_called_once_with(mockAggregate, self.mockSqliteSession)
-        self.mockEventProcessor.ProcessIndexDivergence.assert_called_once_with(self.mockAggregateClass, 0)
-        self.assertEqual(0, self.mockIndexStore.IndexTag.call_count)
-        self.assertEqual(0, self.mockTagManager.CreateTagWithoutPersistence.call_count)
+        self.mockEventProcessor.ProcessIndexDivergence.assert_called_once_with(0)
         self.mockEventProcessor.EnqueueForPersistence.assert_called_once_with(self.mockBufferItem)
-        self.assertEqual(3, self.mockSqliteSession.commit.call_count)
-        self.mockSqliteSession.rollback.assert_called_once_with()
         self.assertEqual(0, self.mockAggregateRepository.Rollback.call_count)
         self.assertEqual(0, self.mockEventProcessor.Rollback.call_count)
 
-    def test_ProcessEventWithExpiredAggregateIdShouldProcessFailure(self):
-        self.StartProcess()
-        mockAggregate = MockAggregate(aggregateId=0, version=1, expiration=9998, lock=mock.MagicMock())
-        self.mockAggregateRepository.Create.return_value = mockAggregate
-        self.mockEventProcessor.FlushPersistenceBuffer = lambda aggregateClass, shouldForce: False
-        mockEventQueueItem = ChronosEventQueueItem(aggregateId=0, eventType='Chronos.Test.TestEvent',
-                                                   eventProto=None, requestId=123, senderId=1, receivedTimestamp=9999, tag=None, tagExpiration=0)
-        self.chronosProcess.SendEvent(mockEventQueueItem)
-        type(self.chronosProcess).isRunning = mock.PropertyMock(side_effect=itertools.chain([True], itertools.repeat(False)))
-        self.chronosProcess.EventLoop()
-
-        self.assertEqual(1, self.mockSqliteSession.begin_nested.call_count)
-        self.assertEqual(1, self.mockEventProcessor.ProcessFailure.call_count)
-        self.assertEqual(2, self.mockSqliteSession.rollback.call_count)
-        self.mockAggregateRepository.Begin.assert_called_once_with()
-        self.mockAggregateRepository.Rollback.assert_called_once_with()
-        self.mockEventProcessor.Begin.assert_called_once_with()
-        self.mockEventProcessor.Rollback.assert_called_once_with()
-
     @parameterized.expand([
-        ('Diverged', MockDivergedAggregate(aggregateId=1, version=2, expiration=0, lock=mock.MagicMock()), 1),
-        ('NonDiverged', MockNonDivergedAggregate(aggregateId=1, version=2, expiration=0, lock=mock.MagicMock()), 0)
+        ('Diverged', MockDivergedAggregate(aggregateId=1, version=2, lock=mock.MagicMock()), 1),
+        ('NonDiverged', MockNonDivergedAggregate(aggregateId=1, version=2, lock=mock.MagicMock()), 0)
     ])
-    def test_ProcessEventWithAggregateIdShouldReindexAggregateBasedOnDivergence(self, name, mockAggregate, reindexCallCount):
+    def test_ProcessEventWithAggregateIdShouldUpsertAggregateSnapshotBasedOnDivergence(self, name, mockAggregate, reindexCallCount):
         self.StartProcess()
         self.mockAggregateRepository.Get.return_value = mockAggregate
         mockEventQueueItem = ChronosEventQueueItem(aggregateId=1, eventType='Chronos.Test.TestEvent',
-                                                   eventProto=None, requestId=123, senderId=1, receivedTimestamp=9999, tag=None, tagExpiration=0)
+                                                   eventProto=None, requestId=123, senderId=1, receivedTimestamp=9999, tag=None)
         self.chronosProcess.SendEvent(mockEventQueueItem)
         type(self.chronosProcess).isRunning = mock.PropertyMock(side_effect=itertools.chain([True], itertools.repeat(False)))
         self.chronosProcess.EventLoop()
 
-        self.assertEqual(reindexCallCount, self.mockIndexStore.ReindexAggregate.call_count)
         self.assertEqual(reindexCallCount, self.mockEventProcessor.ProcessIndexDivergence.call_count)
 
     @parameterized.expand([
-        ('NewAggregateWithoutTag', MockAggregate(aggregateId=0, version=1, expiration=0, lock=mock.MagicMock()), None, 0),
-        ('NewAggregateWithTag', MockAggregate(aggregateId=0, version=1, expiration=0, lock=mock.MagicMock()), 'some tag', 0),
-        ('ExistingAggregateWithoutTag', MockNonDivergedAggregate(aggregateId=3, version=10, expiration=0, lock=mock.MagicMock()), None, 0),
-        ('ExistingAggregateWithTag', MockNonDivergedAggregate(aggregateId=4, version=100, expiration=0, lock=mock.MagicMock()), 'another tag', 12345)
+        ('NewAggregateWithoutTag', MockAggregate(aggregateId=0, version=1, lock=mock.MagicMock()), None),
+        ('NewAggregateWithTag', MockAggregate(aggregateId=0, version=1, lock=mock.MagicMock()), 'some tag'),
+        ('ExistingAggregateWithoutTag', MockNonDivergedAggregate(aggregateId=3, version=10, lock=mock.MagicMock()), None),
+        ('ExistingAggregateWithTag', MockNonDivergedAggregate(aggregateId=4, version=100, lock=mock.MagicMock()), 'another tag')
     ])
-    def test_ProcessEventShouldCreateTagBasedOnEventQueueItemTagInformation(self, name, mockAggregate, tag, tagExpiration):
+    def test_ProcessEventShouldCreateTagBasedOnEventQueueItemTagInformation(self, name, mockAggregate, tag):
         self.StartProcess()
         self.mockAggregateRepository.Get.return_value = mockAggregate
         self.mockAggregateRepository.Create.return_value = mockAggregate
         mockEventQueueItem = ChronosEventQueueItem(aggregateId=mockAggregate.aggregateId, eventType='Chronos.Test.TestEvent',
-                                                   eventProto=None, requestId=123, senderId=1, receivedTimestamp=9999, tag=tag, tagExpiration=tagExpiration)
+                                                   eventProto=None, requestId=123, senderId=1, receivedTimestamp=9999, tag=tag)
         self.chronosProcess.SendEvent(mockEventQueueItem)
         type(self.chronosProcess).isRunning = mock.PropertyMock(side_effect=itertools.chain([True], itertools.repeat(False)))
         self.chronosProcess.EventLoop()
 
         expectedCalls = 0 if tag is None else 1
-        self.assertEqual(expectedCalls, self.mockIndexStore.IndexTag.call_count)
         self.assertEqual(expectedCalls, self.mockEventProcessor.ProcessTag.call_count)
 
     def test_ProcessEventShouldProcessAllEventsInTransaction(self):
         self.StartProcess()
-        self.mockAggregateRepository.Get.return_value = MockAggregate(aggregateId=1, version=1, expiration=0, lock=mock.MagicMock())
-        self.mockAggregateRepository.Create.return_value = MockAggregate(aggregateId=1, version=1, expiration=0, lock=mock.MagicMock())
+        self.mockAggregateRepository.Get.return_value = MockAggregate(aggregateId=1, version=1, lock=mock.MagicMock())
+        self.mockAggregateRepository.Create.return_value = MockAggregate(aggregateId=1, version=1, lock=mock.MagicMock())
         event = ChronosEventQueueItem(aggregateId=1, eventType='Chronos.Test.TestEvent',
-                                      eventProto=None, requestId=123, senderId=1, receivedTimestamp=9999, tag=None, tagExpiration=None)
+                                      eventProto=None, requestId=123, senderId=1, receivedTimestamp=9999, tag=None)
         transactionItem = ChronosEventQueueTransaction([event, event, event])
 
         self.chronosProcess.SendEvent(transactionItem)
@@ -248,6 +209,31 @@ class ChronosProcessTest(unittest.TestCase, GatewayTestBase):
 
         aggregates = self.chronosProcess.Query(ChronosQueryItem(indexKeys={'one': 1, 'two': 2}))
         self.assertEqual(['first', 'second'], aggregates)
+
+    def test_TryVerifyEventPersistenceCheckpointWhileNotRunning(self):
+        self.chronosProcess.isRunning = False
+        self.chronosProcess._tryVerifyEventPersistenceCheckpoint()
+        self.assertFalse(self.mockEventProcessor.TryVerifyEventPersistenceCheckpoint.called)
+
+    def test_TryVerifyEventPersistenceCheckpoint(self):
+        self.StartProcess()
+        self.chronosProcess._tryVerifyEventPersistenceCheckpoint()
+        self.mockEventProcessor.TryVerifyEventPersistenceCheckpoint.assert_called_once_with()
+
+    # @mock.patch('Chronos.Gateway.time')
+    # def test_TryVerifyEventPersistenceCheckpoint(self, time):
+    #     self.StartProcess()
+    #     type(self.chronosProcess).isRunning = mock.PropertyMock(side_effect=itertools.chain([True], itertools.repeat(False)))
+    #     self.mockEventProcessor.TryVerifyEventPersistenceCheckpoint.side_effect = ChronosFailedEventPersistenceException()
+    #     self.chronosProcess._tryVerifyEventPersistenceCheckpoint()
+    #     time.sleep.assert_called_once_with(1)
+    #     self.mockEventProcessor.TryVerifyEventPersistenceCheckpoint.assert_called_once_with()
+
+    def test_Rollback(self):
+        self.StartProcess()
+        self.chronosProcess.Rollback()
+        self.mockEventProcessor.Rollback.assert_called_once_with()
+        self.mockAggregateRepository.Rollback.assert_called_once_with()
 
 
 class ChronosRegistryItemTest(unittest.TestCase):
@@ -301,35 +287,45 @@ class ChronosGatewayTest(unittest.TestCase):
         self.mockLogicCompiler = mock.MagicMock()
         logicCompilerCtor = mock.MagicMock(return_value=self.mockLogicCompiler)
         self.patcher = mock.patch.dict('sys.modules',
-            {'Chronos.EventLogger': mock.MagicMock(),
+            {'Chronos.Core': mock.MagicMock(AggregateLogicCompiler=logicCompilerCtor),
+             'Chronos.EventLogger': mock.MagicMock(),
+             'Chronos.Profiling': mock.MagicMock(),
              'Chronos.Chronos_pb2': mock.MagicMock(),
-             'Chronos.Core': mock.MagicMock(AggregateLogicCompiler=logicCompilerCtor),
              'multiprocessing': multiprocessingMock,
-             'multiprocessing.managers': multiprocessingManagersMock})
+             'multiprocessing.managers': multiprocessingManagersMock,
+             'pickle': mock.MagicMock()})
         self.patcher.start()
+        self.patchOpen = mock.patch('__builtin__.open', mock.MagicMock())
+        self.patchOpen.start()
+        self.patchStatsLogger = mock.patch('Chronos.Gateway.StatisticsLogger', mock.MagicMock())
+        self.patchStatsLogger.start()
 
         global ChronosGatewayException
         from Chronos.Gateway import ChronosGateway, ChronosGatewayException
-        self.mockCoreProviderGenerator = mock.MagicMock()
-        self.mockEventStore = mock.MagicMock()
+        mockCrossAggregateAccess = mock.MagicMock()
+        mockCrossAggregateAccess.GetOrCreateMetadata.return_value = 1
         self.mockSyncManager = mock.MagicMock()
-        self.chronosGateway = ChronosGateway(self.mockEventStore, self.mockSyncManager, self.mockCoreProviderGenerator)
+        self.mockCoreProviderGenerator = mock.MagicMock()
+        self.mockGatewayStore = mock.MagicMock(crossAggregateAccess=mockCrossAggregateAccess)
+        self.chronosGateway = ChronosGateway(self.mockSyncManager, self.mockCoreProviderGenerator, self.mockGatewayStore)
 
     def tearDown(self):
         self.chronosGateway.Shutdown()
         self.patcher.stop()
+        self.patchOpen.stop()
+        self.patchStatsLogger.stop()
 
     def test_CreateRegistrationResponseWithNoArgumentsShouldRaiseChronosGatewayException(self):
         self.assertRaises(ChronosGatewayException, self.chronosGateway.CreateRegistrationResponse)
 
-    @mock.patch('Chronos.Gateway.ChronosRegistrationResponse')
-    def test_CreateRegistrationResponseWithIndexedAttributesShouldSortAttributesAndReturnSuccess(self, mockResponse):
-        response = mockResponse.return_value
-        response.indexedAttributes = []
-        self.chronosGateway.CreateRegistrationResponse(indexedAttributes=[3, 1, 2])
+    # @mock.patch('Chronos.Gateway.ChronosRegistrationResponse')
+    # def test_CreateRegistrationResponseWithIndexedAttributesShouldSortAttributesAndReturnSuccess(self, mockResponse):
+    #     response = mockResponse.return_value
+    #     response.indexedAttributes = []
+    #     self.chronosGateway.CreateRegistrationResponse(indexedAttributes=[3, 1, 2], caseInsensitiveAttributes=[])
 
-        self.assertEqual(response.indexedAttributes, [1, 2, 3])
-        self.assertEqual(response.responseCode, mockResponse.SUCCESS)
+        # self.assertEqual(response.indexedAttributes, [1, 2, 3])
+        # self.assertEqual(response.responseCode, mockResponse.SUCCESS)
 
     @mock.patch('Chronos.Gateway.ChronosRegistrationResponse')
     def test_CreateRegistrationResponseWithErrorMessageShouldSetMessageAndReturnFailure(self, mockResponse):
@@ -346,8 +342,7 @@ class ChronosGatewayTest(unittest.TestCase):
                                                                          AggregateClass=mock.MagicMock(__name__='TestName', IndexedAttributes=[])))
         self.chronosGateway.Register(mockRequest)
 
-        self.mockLogicCompiler.Compile.assert_called_once_with('TestName', mockLogic)
-        self.assertEqual(self.mockEventStore.PublishManagementNotification.call_count, 1)
+        self.mockLogicCompiler.Compile.assert_called_once_with(1, 'TestName', mockLogic)
         self.assertEqual(self.chronosGateway.registry['TestName'].module.__name__, 'TestName')
 
     def test_RegisterExistingItem(self):
@@ -360,8 +355,7 @@ class ChronosGatewayTest(unittest.TestCase):
         self.chronosGateway.Register(mockRequest)
 
         mockRegistryItem.Shutdown.assert_called_once_with()
-        self.mockLogicCompiler.Compile.assert_called_once_with('TestName', mockLogic)
-        self.assertEqual(self.mockEventStore.PublishManagementNotification.call_count, 1)
+        self.mockLogicCompiler.Compile.assert_called_once_with(1, 'TestName', mockLogic)
 
     def test_AddRegistryItemForNewItem(self):
         mockModule = mock.MagicMock()
@@ -369,7 +363,7 @@ class ChronosGatewayTest(unittest.TestCase):
         mockModule.__name__ = 'Test'
         mockRegistryItem = mock.MagicMock()
         self.chronosGateway.registry['Test'] = mockRegistryItem
-        self.chronosGateway.AddRegistryItem(123, mockModule)
+        self.chronosGateway.AddRegistryItem(mock.MagicMock(), mockModule)
 
         self.assertEqual(mockRegistryItem.Startup.call_count, 1)
 
@@ -395,7 +389,6 @@ class ChronosGatewayTest(unittest.TestCase):
         mockRegistryItem.Shutdown.assert_called_once_with()
         self.chronosGateway.SaveRegistry.assert_called_once_with()
         self.assertTrue('Test' in self.chronosGateway.registry)
-        self.assertEqual(self.mockEventStore.PublishManagementNotification.call_count, 1)
 
     def test_UnregisterForMissingItem(self):
         self.chronosGateway.SaveRegistry = mock.MagicMock()
@@ -438,8 +431,8 @@ class ChronosGatewayTest(unittest.TestCase):
         self.chronosGateway.RouteEvent(mockOtherRequest)
 
         self.assertEqual(mockEventQueueItem.call_args_list,
-            [mock.call(123, 'Event', 'proto string', 1, 4, 1e9, None, None),
-             mock.call(456, 'AnEvent', 'proto string 2', 2, 5, 2e9, None, None)])
+            [mock.call(123, 'Event', 'proto string', 1, 4, 1e9, None),
+             mock.call(456, 'AnEvent', 'proto string 2', 2, 5, 2e9, None)])
         mockTestRegistryItem.process.SendEvent.assert_called_once_with('first')
         mockOtherRegistryItem.process.SendEvent.assert_called_once_with('second')
 
@@ -480,14 +473,6 @@ class ChronosGatewayTest(unittest.TestCase):
     def test_GetByIndexMalformed(self):
         mockRequest = mock.MagicMock(aggregateName='foobar', indexKeys=['one'])
         self.assertRaises(ChronosGatewayException, self.chronosGateway.GetByIndex, mockRequest)
-
-    def test_GetTags(self):
-        mockRegistryItem = mock.MagicMock()
-        mockRegistryItem.process.GetAllTags.return_value = 'all tags'
-        self.chronosGateway.GetRegistryItem = mock.MagicMock(return_value=mockRegistryItem)
-        result = self.chronosGateway.GetTags('testing')
-
-        self.assertEqual(result, 'all tags')
 
     def test_GetByTag(self):
         mockRegistryItem = mock.MagicMock()

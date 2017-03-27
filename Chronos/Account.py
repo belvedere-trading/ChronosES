@@ -1,14 +1,10 @@
 #pylint: skip-file
-from Chronos.Core import Aggregate, Event, ChronosIndex
-from Account_pb2 import Account, CreateEvent, DepositEvent, WithdrawEvent
-
-class AccountIndex(ChronosIndex):
-    attributes = ('owner',)
+from Chronos.Core import Aggregate, Event
+from Chronos.Account_pb2 import Account, CreateEvent, DepositEvent, WithdrawEvent
 
 class Account(Aggregate):
     Proto = Account
-    Index = AccountIndex
-
+    IndexKey = '{owner}'
 
     def IsValid(self):
         return True

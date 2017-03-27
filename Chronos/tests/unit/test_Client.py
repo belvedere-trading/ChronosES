@@ -1,6 +1,25 @@
 #pylint: skip-file
 import mock
 import unittest
+from mock import patch
+
+class FakeEvent(object):
+    def ParseFromString(self, proto):
+        pass
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        if isinstance(other, self.__class__):
+            return not self.__eq__(other)
+
+class Foo(FakeEvent):
+    pass
+
+class Bar(FakeEvent):
+    pass
 
 class ChronosClientTest(unittest.TestCase):
     def setUp(self):
@@ -9,12 +28,13 @@ class ChronosClientTest(unittest.TestCase):
             {'Ice': mock.MagicMock(),
              'pkg_resources': self.mockPkgResources,
              'Chronos.EventLogger': mock.MagicMock(),
+             'Chronos.Processor': mock.MagicMock(),
              'Chronos.Chronos_pb2': mock.MagicMock(),
              'Chronos.Infrastructure': mock.MagicMock()})
         self.patcher.start()
 
-        global ChronosClient
-        from Chronos.Client import ChronosClient
+        global ChronosClient, EventResponse, ChronosTransactionRequest, ChronosRequestWithTag, ChronosClientException, TagNotFound
+        from Chronos.Client import ChronosClient, EventResponse, ChronosTransactionRequest, ChronosRequestWithTag, ChronosClientException, TagNotFound
         self.mockProtoClass = mock.MagicMock()
         self.mockProtoClass.__name__ = 'MockProto'
         self.mockRedisController = mock.MagicMock()
@@ -29,7 +49,8 @@ class ChronosClientTest(unittest.TestCase):
     @mock.patch('Chronos.Client.SubscriptionManager')
     def test_Construction(self, mockSubscriptionManager):
         self.mockInfrastructureProvider = mock.MagicMock()
-        chronosClient = ChronosClient(mock.MagicMock(__name__='MockProto'), infrastructureProvider=self.mockInfrastructureProvider, redisController=self.mockRedisController)
+        chronosClient = ChronosClient(mock.MagicMock(__name__='MockProto'), infrastructureProvider=self.mockInfrastructureProvider,
+                                                     redisController=self.mockRedisController)
 
         self.assertEqual(chronosClient.aggregateName, 'MockProto')
         mockSubscriptionManager.return_value.SubscribeForUnifiedUpdates.assert_called_once_with()
@@ -142,3 +163,66 @@ class ChronosClientTest(unittest.TestCase):
         self.chronosClient.GetAggregatesByIndex(index='anything')
 
         self.assertEquals(self.chronosClient.client.GetByIndex.call_count, 1)
+
+    def test_ParseEventResponse(self):
+        eventProto = mock.MagicMock
+        eventProto.type = 'MockProto.Foo'
+        eventProto.proto = mock.MagicMock()
+        eventProto.version = 1
+        eventProto.logicVersion = 2
+        eventProto.receivedTimestamp = 3
+        eventProto.processedTimestamp = 4
+        self.chronosClient.EventTypes = [Foo, Bar]
+        response = self.chronosClient.ParseEventResponse(eventProto)
+
+        self.assertEqual(response.event, Foo())
+        self.assertEqual(response.version, 1)
+        self.assertEqual(response.logicVersion, 2)
+        self.assertEqual(response.receivedTimestamp, 3)
+        self.assertEqual(response.processedTimestamp, 4)
+
+    def test_ParseBadEvent(self):
+        badEventProto = mock.MagicMock()
+        badEventProto.type = 'MockProto.NotFooBar'
+        self.assertRaises(ValueError, self.chronosClient.ParseEventResponse, badEventProto)
+
+    def test_RaiseEventWithTag(self):
+        mockEvent = mock.MagicMock()
+        self.chronosClient.client.ProcessEventWithTag.return_value = 1
+
+        self.assertEqual(self.chronosClient.RaiseEventWithTag('tag', mockEvent), 1)
+
+    def test_RaiseBadEventWithTag(self):
+        mockEvent = mock.MagicMock()
+        mockEvent.SerializeToString.side_effect = ValueError()
+
+        self.assertRaises(ChronosClientException, self.chronosClient.RaiseEventWithTag, 'tag', mockEvent)
+
+    def test_RaiseTransaction(self):
+        mockEvent = mock.MagicMock()
+        self.chronosClient.client.ProcessTransaction.return_value = 1
+
+        self.assertEqual(self.chronosClient.RaiseTransaction([mockEvent]), 1)
+
+    def test_RaiseBadTransaction(self):
+        mockEvent = mock.MagicMock()
+        mockEvent.event.SerializeToString.side_effect = ValueError()
+
+        self.assertRaises(ChronosClientException, self.chronosClient.RaiseTransaction, [mockEvent])
+
+    @patch('Chronos.Client.ChronosQueryResponse')
+    def test_GetAggregateByTag(self, queryResponse):
+        queryResponse.return_value.responseCode = queryResponse.TAG_NOT_FOUND
+        self.assertRaises(TagNotFound, self.chronosClient.GetAggregateByTag, 0, 'no_tag')
+
+    @patch('Chronos.Client.ChronosQueryResponse')
+    @patch('Chronos.Client.ChronosQueryByTagRequest')
+    def test_GetAggregateByTag(self, queryByTagRequest, queryResponse):
+        queryResponse.return_value.aggregates = [1]
+        queryByTagRequest.return_value.SerializeToString.return_value = 2
+        self.chronosClient.ParseAggregate = mock.MagicMock()
+        self.chronosClient.client.GetByTag = mock.MagicMock()
+
+        self.chronosClient.GetAggregateByTag(1, 'tag')
+        self.chronosClient.ParseAggregate.assert_called_once_with(1)
+        self.chronosClient.client.GetByTag.assert_called_once_with(2)
